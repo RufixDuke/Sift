@@ -31,7 +31,7 @@ export function Hero(): React.ReactElement {
       <div className="col-span-12 lg:col-span-7 flex flex-col gap-8">
         <SectionLabel>Local development logs, unified</SectionLabel>
         <h1 className="font-display text-display text-ink">
-          One pane
+          One pane.
           <br />
           Every service.
           <span className="text-clay">*</span>
