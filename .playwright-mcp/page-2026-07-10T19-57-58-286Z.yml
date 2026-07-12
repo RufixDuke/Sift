@@ -1,0 +1,101 @@
+- generic [ref=e2]:
+  - navigation [ref=e3]:
+    - generic [ref=e4]:
+      - link "Sift" [ref=e6] [cursor=pointer]:
+        - /url: /
+      - generic [ref=e7]:
+        - link "Docs" [ref=e8] [cursor=pointer]:
+          - /url: /docs
+        - link "Install" [ref=e9] [cursor=pointer]:
+          - /url: "#install"
+        - link "GitHub" [ref=e10] [cursor=pointer]:
+          - /url: https://github.com/abdul-qudus/sift
+      - link "npm" [ref=e12] [cursor=pointer]:
+        - /url: https://www.npmjs.com/package/sift-logs
+  - main [ref=e13]:
+    - generic [ref=e14]:
+      - generic [ref=e15]:
+        - generic [ref=e16]: Local development logs, unified
+        - heading "One pane. Every service.*" [level=1] [ref=e17]: One pane.Every service.*
+        - paragraph [ref=e18]: Sift aggregates, parses, and filters logs from all your running services in a single, interactive terminal interface. No more tab-switching.
+        - generic [ref=e19]:
+          - generic [ref=e20]:
+            - code [ref=e21]: npm install -g sift-logs
+            - button "Copy" [ref=e22]
+          - link "View on GitHub →" [ref=e23] [cursor=pointer]:
+            - /url: https://github.com/abdul-qudus/sift
+      - generic [ref=e30]:
+        - generic [ref=e113]: $ docker compose logs -f | sift run --file -
+        - generic [ref=e114]: $ sift run
+        - generic [ref=e115]: $ sift config init
+    - generic [ref=e33]:
+      - generic [ref=e34]:
+        - generic [ref=e35]: The problem
+        - heading "Five tabs. One error." [level=2] [ref=e36]: Five tabs.One error.
+      - generic [ref=e37]:
+        - paragraph [ref=e38]: You are running a mobile bundler, a web frontend, an API, a database, and a webhook listener. Something breaks. You see a flicker of red in one terminal, but by the time you switch, it has scrolled away.
+        - paragraph [ref=e39]: "Existing tools either run your processes without parsing their output, or assume you have already adopted a specific runtime. Sift meets you where you are: pipe anything, or let it detect your services automatically."
+    - generic [ref=e42]:
+      - generic [ref=e43]:
+        - generic [ref=e44]: Capabilities
+        - heading "Built for the multi-service loop." [level=2] [ref=e45]
+      - generic [ref=e46]:
+        - generic [ref=e47]:
+          - generic [ref=e48]: "01"
+          - heading "Aggregate" [level=3] [ref=e49]
+          - paragraph [ref=e50]: One pane for every service. Sift reads from pipes, files, or auto-detects scripts in your package.json.
+        - generic [ref=e51]:
+          - generic [ref=e52]: "02"
+          - heading "Parse" [level=3] [ref=e53]
+          - paragraph [ref=e54]: Recognises log levels, timestamps, service names, and request IDs across JSON, bracketed, logfmt, access-log, and Docker formats.
+        - generic [ref=e55]:
+          - generic [ref=e56]: "03"
+          - heading "Filter" [level=3] [ref=e57]
+          - paragraph [ref=e58]: Search, filter by level, hide services, and pause the stream without losing a single line.
+        - generic [ref=e59]:
+          - generic [ref=e60]: "04"
+          - heading "Correlate" [level=3] [ref=e61]
+          - paragraph [ref=e62]: Trace a single request across multiple services when your stack emits shared trace IDs.
+    - generic [ref=e64]:
+      - generic [ref=e65]:
+        - generic [ref=e66]: Live demo
+        - generic [ref=e72]:
+          - generic [ref=e73]: $ [09:32:15] web GET /api/users 200
+          - generic [ref=e74]: $ [09:32:15] api SELECT users 12ms
+          - generic [ref=e75]: $ ⚠ [09:32:16] api Deprecation warn
+          - generic [ref=e76]: $ [09:32:16] mobile BUNDLE complete
+          - generic [ref=e77]: "$ ✗ [09:32:18] api ERROR: Timeout"
+          - generic [ref=e78]: $ [09:32:18] db Connection pool
+          - generic [ref=e79]: $ [09:32:19] api Retry attempt 2
+          - generic [ref=e80]: $ [09:32:20] api 200 OK (retry)
+      - generic [ref=e81]:
+        - heading "See everything at a glance" [level=3] [ref=e82]
+        - paragraph [ref=e83]: Timestamps, service tags, log levels, and warnings are parsed automatically — no configuration required.
+    - generic [ref=e86]:
+      - generic [ref=e87]:
+        - generic [ref=e88]: Install
+        - heading "One command." [level=2] [ref=e89]
+      - generic [ref=e90]:
+        - generic [ref=e91]:
+          - generic [ref=e92]:
+            - generic [ref=e93]: npm
+            - code [ref=e94]: npm install -g sift-logs
+          - button "Copy" [active] [ref=e117]
+        - generic [ref=e96]:
+          - generic [ref=e97]:
+            - generic [ref=e98]: pnpm
+            - code [ref=e99]: pnpm add -g sift-logs
+          - button "Copy" [ref=e100]
+        - generic [ref=e101]:
+          - generic [ref=e102]:
+            - generic [ref=e103]: yarn
+            - code [ref=e104]: yarn global add sift-logs
+          - button "Copy" [ref=e105]
+  - contentinfo [ref=e106]:
+    - generic [ref=e107]: Sift
+    - paragraph [ref=e109]: MIT © Abdul-Qudus Rufai
+    - generic [ref=e110]:
+      - link "GitHub" [ref=e111] [cursor=pointer]:
+        - /url: https://github.com/abdul-qudus/sift
+      - link "npm" [ref=e112] [cursor=pointer]:
+        - /url: https://www.npmjs.com/package/sift-logs

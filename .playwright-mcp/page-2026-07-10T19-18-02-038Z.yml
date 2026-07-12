@@ -1,0 +1,60 @@
+- generic [ref=f4e2]:
+  - navigation [ref=f4e3]:
+    - generic [ref=f4e4]:
+      - link "Sift" [ref=f4e6] [cursor=pointer]:
+        - /url: /
+      - generic [ref=f4e7]:
+        - link "Docs" [ref=f4e8] [cursor=pointer]:
+          - /url: /docs
+        - link "Install" [ref=f4e9] [cursor=pointer]:
+          - /url: "#install"
+        - link "GitHub" [ref=f4e10] [cursor=pointer]:
+          - /url: https://github.com/abdul-qudus/sift
+      - link "npm" [ref=f4e12] [cursor=pointer]:
+        - /url: https://www.npmjs.com/package/sift-logs
+  - main [ref=f4e13]:
+    - generic [ref=f4e14]:
+      - generic [ref=f4e15]:
+        - generic [ref=f4e16]: Documentation
+        - navigation [ref=f4e17]:
+          - link "Quickstart" [ref=f4e18] [cursor=pointer]:
+            - /url: "#quickstart"
+          - link "Commands" [ref=f4e19] [cursor=pointer]:
+            - /url: "#commands"
+          - link "Config" [ref=f4e20] [cursor=pointer]:
+            - /url: "#config"
+      - generic [ref=f4e21]:
+        - generic [ref=f4e22]:
+          - heading "Get started" [level=1] [ref=f4e23]
+          - paragraph [ref=f4e24]: Install Sift globally, then run it from any project.
+          - generic [ref=f4e30]:
+            - generic [ref=f4e31]: $ npm install -g sift-logs
+            - generic [ref=f4e32]: $ sift run
+            - generic [ref=f4e33]: $ docker compose logs -f | sift run --file -
+        - generic [ref=f4e34]:
+          - heading "CLI commands" [level=2] [ref=f4e35]
+          - generic [ref=f4e36]:
+            - generic [ref=f4e37]:
+              - term [ref=f4e38]: sift run
+              - definition [ref=f4e39]: Detect services from package.json and aggregate logs.
+            - generic [ref=f4e40]:
+              - term [ref=f4e41]: sift run --file -
+              - definition [ref=f4e42]: Read logs from stdin.
+            - generic [ref=f4e43]:
+              - term [ref=f4e44]: sift config init
+              - definition [ref=f4e45]: Create a sift.config.json file.
+            - generic [ref=f4e46]:
+              - term [ref=f4e47]: sift --version
+              - definition [ref=f4e48]: Show version.
+        - generic [ref=f4e49]:
+          - heading "Configuration" [level=2] [ref=f4e50]
+          - paragraph [ref=f4e51]: Use sift.config.json when auto-detection is not enough.
+          - generic [ref=f4e52]: "{ \"$schema\": \"https://sift.dev/schema.json\", \"version\": 1, \"services\": [ { \"name\": \"web\", \"command\": \"npm run dev\", \"cwd\": \"./frontend\" }, { \"name\": \"api\", \"command\": \"npm run server\", \"cwd\": \"./backend\" } ], \"settings\": { \"bufferSize\": 10000, \"theme\": \"dark\" } }"
+  - contentinfo [ref=f4e53]:
+    - generic [ref=f4e54]: Sift
+    - paragraph [ref=f4e56]: MIT © Abdul-Qudus Rufai
+    - generic [ref=f4e57]:
+      - link "GitHub" [ref=f4e58] [cursor=pointer]:
+        - /url: https://github.com/abdul-qudus/sift
+      - link "npm" [ref=f4e59] [cursor=pointer]:
+        - /url: https://www.npmjs.com/package/sift-logs
