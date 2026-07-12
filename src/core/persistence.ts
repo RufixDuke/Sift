@@ -43,6 +43,31 @@ function defaultSessionName(): string {
   return `session-${now.getFullYear()}${pad(now.getMonth() + 1)}${pad(now.getDate())}-${pad(now.getHours())}${pad(now.getMinutes())}${pad(now.getSeconds())}`;
 }
 
+function platformBuildToolsMessage(): string {
+  const platform = process.platform;
+  if (platform === 'darwin') {
+    return 'Install Xcode Command Line Tools: xcode-select --install';
+  }
+  if (platform === 'linux') {
+    return 'Install build tools. For Debian/Ubuntu: sudo apt-get install build-essential python3';
+  }
+  if (platform === 'win32') {
+    return 'Install Visual Studio Build Tools or Windows SDK, or use WSL2';
+  }
+  return 'Install a C++ compiler, Python, and Node.js headers for your platform';
+}
+
+function loadBetterSqlite(): typeof import('better-sqlite3').default {
+  try {
+    return require('better-sqlite3') as typeof import('better-sqlite3').default;
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    throw new Error(
+      `SQLite persistence requires native build tools.\n${platformBuildToolsMessage()}\nOriginal error: ${message}`,
+    );
+  }
+}
+
 export class Persistence {
   private dbPath: string;
   private db: import('better-sqlite3').Database | null = null;
@@ -51,16 +76,35 @@ export class Persistence {
   private flushTimer: NodeJS.Timeout | null = null;
   private closed = false;
   private insertStmt: import('better-sqlite3').Statement | null = null;
+  private available: boolean;
+  private unavailableReason: string | null = null;
 
   constructor(options: PersistenceOptions = {}) {
     this.dbPath = options.dbPath ?? DEFAULT_DB_PATH;
+    try {
+      loadBetterSqlite();
+      this.available = true;
+    } catch (err) {
+      this.available = false;
+      this.unavailableReason = err instanceof Error ? err.message : String(err);
+    }
+  }
+
+  isAvailable(): boolean {
+    return this.available;
+  }
+
+  getUnavailableReason(): string | null {
+    return this.unavailableReason;
   }
 
   private loadDb(): import('better-sqlite3').Database {
     if (this.db) return this.db;
+    if (!this.available) {
+      throw new Error(this.unavailableReason ?? 'SQLite persistence is not available');
+    }
 
-    // Lazy import so failures are surfaced only when persistence is used.
-    const Database = require('better-sqlite3') as typeof import('better-sqlite3').default;
+    const Database = loadBetterSqlite();
     ensureDbDir(this.dbPath);
     this.db = new Database(this.dbPath);
     this.db.pragma('journal_mode = WAL');
@@ -129,7 +173,7 @@ export class Persistence {
   }
 
   append(entry: ParsedLogEntry): void {
-    if (this.closed) return;
+    if (this.closed || !this.available) return;
     this.createSession();
     this.pending.push(entry);
     if (this.pending.length >= 100) {
@@ -138,7 +182,7 @@ export class Persistence {
   }
 
   flush(): void {
-    if (this.pending.length === 0 || this.sessionId === null || !this.insertStmt) return;
+    if (this.pending.length === 0 || this.sessionId === null || !this.insertStmt || !this.available) return;
 
     const db = this.loadDb();
     const sessionId = this.sessionId;

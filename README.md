@@ -159,6 +159,19 @@ No configuration is required. Pipe any service that emits HTTP access logs and t
 - Linux: full support
 - Windows: via WSL2 (native Windows not in MVP)
 
+## Build tools for SQLite persistence
+
+Sift uses `better-sqlite3` for session persistence. It ships with prebuilt binaries for common platforms, but if no prebuilt binary is available for your system, npm will need to compile it from source.
+
+Install the required build tools for your platform:
+
+- **macOS**: `xcode-select --install`
+- **Ubuntu / Debian**: `sudo apt-get install build-essential python3`
+- **Fedora / RHEL**: `sudo dnf install gcc-c++ make python3`
+- **Windows**: Install Visual Studio Build Tools or use WSL2
+
+If you skip this, `sift run` still works but sessions are not saved to disk, and `sift replay` / `sift diff` are unavailable.
+
 ## Marketing Website
 
 The public-facing website lives in [`site/`](./site). It is a Vite + React + TypeScript single-page app with a warm editorial design system, built to explain Sift and drive adoption.

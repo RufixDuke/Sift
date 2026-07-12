@@ -16,6 +16,13 @@ export async function replayCommand(options: ReplayOptions): Promise<void> {
   const identifier = options.session ?? 'last';
   const persistence = new Persistence();
 
+  if (!persistence.isAvailable()) {
+    console.error('SQLite persistence is unavailable. Install build tools to use sift replay.');
+    const reason = persistence.getUnavailableReason();
+    if (reason) console.error(reason);
+    process.exit(1);
+  }
+
   const session = persistence.findSession(identifier);
   if (!session) {
     console.error(`No session found for "${identifier}".`);

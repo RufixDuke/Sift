@@ -44,6 +44,13 @@ export async function diffCommand(
 ): Promise<void> {
   const persistence = new Persistence();
 
+  if (!persistence.isAvailable()) {
+    console.error('SQLite persistence is unavailable. Install build tools to use sift diff.');
+    const reason = persistence.getUnavailableReason();
+    if (reason) console.error(reason);
+    process.exit(1);
+  }
+
   const a = persistence.findSession(sessionA);
   const b = persistence.findSession(sessionB);
 

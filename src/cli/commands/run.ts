@@ -36,6 +36,11 @@ export async function runCommand(options: RunOptions): Promise<void> {
   };
   const persistence = options.save === false ? null : new Persistence();
 
+  if (persistence && !persistence.isAvailable() && options.save !== false) {
+    console.warn('⚠ SQLite persistence is unavailable. Sessions will not be saved.');
+    console.warn('  Install build tools to enable replay/diff: https://github.com/RufixDuke/Sift#build-tools');
+  }
+
   const sessionName = options.sessionName;
 
   if (options.file) {
@@ -75,7 +80,7 @@ export async function runCommand(options: RunOptions): Promise<void> {
   const spawner = new ServiceSpawner({ services });
   const assembler = new MultiLineAssembler();
 
-  if (persistence) {
+  if (persistence?.isAvailable()) {
     persistence.createSession({
       name: sessionName,
       command: `sift run${options.config ? ` -c ${options.config}` : ''}${options.package ? ` -p ${options.package}` : ''}`,
@@ -167,7 +172,7 @@ async function runFileMode(
   const tracker = new MetricsTracker();
   const assembler = new MultiLineAssembler();
 
-  if (persistence) {
+  if (persistence?.isAvailable()) {
     persistence.createSession({
       name: sessionName ?? `file-${filePath === '-' ? 'stdin' : filePath}`,
       command: `sift run --file ${filePath}`,
