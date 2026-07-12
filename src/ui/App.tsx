@@ -50,6 +50,8 @@ export function App({
   });
   const pendingRender = useRef<number | null>(null);
   const lastVolume = useRef({ count: 0, at: Date.now(), high: false });
+  const followTail = useRef(true);
+  const prevFilteredLength = useRef(0);
 
   const scheduleRender = useCallback(() => {
     if (pendingRender.current !== null) return;
@@ -60,6 +62,13 @@ export function App({
       }
     }, 16) as unknown as number;
   }, [buffer, paused]);
+
+  useEffect(() => {
+    if (followTail.current && filteredEntries.length > 0) {
+      setSelectedIndex(filteredEntries.length - 1);
+    }
+    prevFilteredLength.current = filteredEntries.length;
+  }, [filteredEntries.length]);
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -129,16 +138,28 @@ export function App({
     }
 
     if (key.upArrow) {
+      followTail.current = false;
       setSelectedIndex((prev) => Math.max(0, prev - 1));
     } else if (key.downArrow) {
-      setSelectedIndex((prev) => Math.min(filteredEntries.length - 1, prev + 1));
+      setSelectedIndex((prev) => {
+        const next = Math.min(filteredEntries.length - 1, prev + 1);
+        if (next === filteredEntries.length - 1) followTail.current = true;
+        return next;
+      });
     } else if (key.pageUp) {
+      followTail.current = false;
       setSelectedIndex((prev) => Math.max(0, prev - 10));
     } else if (key.pageDown) {
-      setSelectedIndex((prev) => Math.min(filteredEntries.length - 1, prev + 10));
+      setSelectedIndex((prev) => {
+        const next = Math.min(filteredEntries.length - 1, prev + 10);
+        if (next === filteredEntries.length - 1) followTail.current = true;
+        return next;
+      });
     } else if (key.home) {
+      followTail.current = false;
       setSelectedIndex(0);
     } else if (key.end) {
+      followTail.current = true;
       setSelectedIndex(filteredEntries.length - 1);
     }
 
@@ -228,6 +249,7 @@ export function App({
   const handleSearchChange = (value: string) => {
     setQuery(value);
     setFilters((f) => ({ ...f, query: value }));
+    followTail.current = false;
     setSelectedIndex(0);
   };
 

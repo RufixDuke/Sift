@@ -133,8 +133,6 @@ export const SERVICE_PATTERNS: ServicePattern[] = [
   { script: 'web', name: 'web', type: 'client' },
   { script: 'app', name: 'app', type: 'client' },
   { script: 'expo', name: 'mobile', type: 'mobile' },
-  { script: 'android', name: 'android', type: 'mobile' },
-  { script: 'ios', name: 'ios', type: 'mobile' },
   { script: 'metro', name: 'metro', type: 'bundler' },
   { script: 'db', name: 'db', type: 'database' },
   { script: 'postgres', name: 'db', type: 'database' },
