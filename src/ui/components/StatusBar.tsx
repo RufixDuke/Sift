@@ -14,9 +14,10 @@ export interface StatusBarProps {
   highVolume?: boolean;
   tracker?: MetricsTracker;
   statusMessage?: string | null;
+  isolatedService?: string | null;
 }
 
-export function StatusBar({ services, totalLogs, paused, filters, width, highVolume = false, tracker, statusMessage }: StatusBarProps): React.ReactElement {
+export function StatusBar({ services, totalLogs, paused, filters, width, highVolume = false, tracker, statusMessage, isolatedService }: StatusBarProps): React.ReactElement {
   const running = services.filter((s) => s.status === 'running').length;
   const crashed = services.filter((s) => s.status === 'crashed' || s.status === 'unstable').length;
 
@@ -26,6 +27,7 @@ export function StatusBar({ services, totalLogs, paused, filters, width, highVol
 
   const levelText = filters.level && filters.level !== 'all' ? `level:${filters.level}` : '';
   const queryText = filters.query ? `search:${filters.query}` : '';
+  const serviceText = isolatedService ? `only:${isolatedService}` : '';
   const volumeText = highVolume ? '⚡ high volume' : '';
 
   const errorSeries = tracker?.aggregateErrorSeries() ?? [];
@@ -37,7 +39,7 @@ export function StatusBar({ services, totalLogs, paused, filters, width, highVol
   const center = statusMessage
     ? ` ${statusMessage}`
     : ` ${running}/${services.length} services | ${totalLogs} logs ${volumeText}`;
-  const right = ` ${metricsText} ${levelText} ${queryText} [e/w/i/a] filter [h] help [q] quit `;
+  const right = ` ${metricsText} ${levelText} ${serviceText} ${queryText} [e/w/i/a] filter [h] help [q] quit `;
 
   const centerPad = Math.max(0, width - left.length - right.length);
 

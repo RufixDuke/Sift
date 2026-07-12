@@ -8,6 +8,7 @@ import { theme } from '../theme.js';
 export interface ServiceSidebarProps {
   services: ServiceState[];
   hiddenServices?: Set<string>;
+  isolatedService?: string | null;
   tracker?: MetricsTracker;
 }
 
@@ -43,7 +44,7 @@ function healthColor(health: ServiceHealth): string {
   }
 }
 
-export function ServiceSidebar({ services, hiddenServices = new Set(), tracker }: ServiceSidebarProps): React.ReactElement {
+export function ServiceSidebar({ services, hiddenServices = new Set(), isolatedService = null, tracker }: ServiceSidebarProps): React.ReactElement {
   const errorCount = services.reduce((sum, s) => sum + (s.status === 'crashed' ? 1 : 0), 0);
   const warningCount = services.reduce((sum, s) => sum + (s.status === 'unstable' ? 1 : 0), 0);
 
@@ -52,7 +53,8 @@ export function ServiceSidebar({ services, hiddenServices = new Set(), tracker }
       <Text bold color={theme.sidebar.fg}>Services</Text>
       <Box flexDirection="column" marginY={1}>
         {services.map((service, idx) => {
-          const hidden = hiddenServices.has(service.name);
+          const isSolo = isolatedService === service.name;
+          const hidden = isolatedService ? !isSolo : hiddenServices.has(service.name);
           const metrics = tracker?.snapshot(service.name, service.status);
           const health = metrics?.health ?? 'healthy';
           const showMetrics = tracker && (metrics?.requestsPerMinute ?? 0) > 0;
@@ -60,12 +62,13 @@ export function ServiceSidebar({ services, hiddenServices = new Set(), tracker }
             <Box key={service.name}>
               <Text color={theme.muted.fg}>{idx + 1}. {statusIndicator(service.status)} </Text>
               <Text color={healthColor(health)}>● </Text>
-              <Text color={hidden ? theme.muted.fg : service.color}>{service.name.padEnd(12)}</Text>
+              <Text color={hidden ? theme.muted.fg : service.color} bold={isSolo}>{service.name.padEnd(12)}</Text>
               <Text color={theme.muted.fg}>{service.logCount} logs</Text>
               {showMetrics && (
                 <Text color={theme.muted.fg}>  {formatNumber(metrics.requestsPerMinute)}/min · {Math.round(metrics.avgResponseTimeMs)}ms</Text>
               )}
-              {hidden && <Text color={theme.muted.fg}> [hidden]</Text>}
+              {isSolo && <Text color={theme.highlight.fg}> [solo]</Text>}
+              {!isSolo && hidden && <Text color={theme.muted.fg}> [hidden]</Text>}
             </Box>
           );
         })}

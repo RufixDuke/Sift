@@ -43,6 +43,7 @@ export function App({
   const [selectedIndex, setSelectedIndex] = useState(0);
   const [filters, setFilters] = useState<Filters>({ level: 'all' });
   const [hiddenServices, setHiddenServices] = useState<Set<string>>(new Set());
+  const [isolatedService, setIsolatedService] = useState<string | null>(null);
   const [overlay, setOverlay] = useState<OverlayMode>('none');
   const [query, setQuery] = useState('');
   const [expandedIds, setExpandedIds] = useState<Set<number>>(new Set());
@@ -58,6 +59,8 @@ export function App({
   const followTail = useRef(true);
   const prevFilteredLength = useRef(0);
   const statusMessageTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const pendingServicePrefix = useRef(false);
+  const pendingServicePrefixTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const flashStatusMessage = useCallback((message: string) => {
     if (statusMessageTimeout.current) clearTimeout(statusMessageTimeout.current);
@@ -68,13 +71,16 @@ export function App({
   useEffect(() => {
     return () => {
       if (statusMessageTimeout.current) clearTimeout(statusMessageTimeout.current);
+      if (pendingServicePrefixTimeout.current) clearTimeout(pendingServicePrefixTimeout.current);
     };
   }, []);
 
   const filteredEntries = entries.filter((e) => {
     if (filters.level && filters.level !== 'all' && e.level !== filters.level) return false;
     if (filters.query && !e.raw.toLowerCase().includes(filters.query.toLowerCase())) return false;
-    if (hiddenServices.has(e.service)) return false;
+    if (isolatedService) {
+      if (e.service !== isolatedService) return false;
+    } else if (hiddenServices.has(e.service)) return false;
     return true;
   });
 
@@ -204,6 +210,7 @@ export function App({
       setFilters((f) => ({ ...f, level: f.level === 'info' ? 'all' : 'info' }));
     } else if (input === 'a') {
       setFilters({ level: 'all' });
+      setIsolatedService(null);
     }
 
     if (input === 'n' && filters.query) {
@@ -258,29 +265,51 @@ export function App({
       }
     }
 
-    // Service toggles: s1, s2, ... s9
-    const serviceToggleMatch = input.match(/^s(\d)$/);
-    if (serviceToggleMatch) {
-      const idx = Number.parseInt(serviceToggleMatch[1], 10) - 1;
-      const svc = services[idx];
-      if (svc) {
-        setHiddenServices((prev) => {
-          const next = new Set(prev);
-          if (next.has(svc.name)) next.delete(svc.name);
-          else next.add(svc.name);
-          return next;
-        });
+    // Service toggles: 's' then a digit, e.g. s1, s2 ... s9.
+    // Ink delivers each keystroke as a separate input event, so "s1" never
+    // arrives as one string — track the 's' prefix and consume the digit
+    // that follows within a short window.
+    if (input === 's') {
+      pendingServicePrefix.current = true;
+      if (pendingServicePrefixTimeout.current) clearTimeout(pendingServicePrefixTimeout.current);
+      pendingServicePrefixTimeout.current = setTimeout(() => {
+        pendingServicePrefix.current = false;
+      }, 800);
+      return;
+    }
+
+    if (pendingServicePrefix.current) {
+      pendingServicePrefix.current = false;
+      if (pendingServicePrefixTimeout.current) clearTimeout(pendingServicePrefixTimeout.current);
+      if (/^[1-9]$/.test(input)) {
+        const idx = Number.parseInt(input, 10) - 1;
+        const svc = services[idx];
+        if (svc) {
+          setHiddenServices((prev) => {
+            const next = new Set(prev);
+            if (next.has(svc.name)) next.delete(svc.name);
+            else next.add(svc.name);
+            return next;
+          });
+          flashStatusMessage(hiddenServices.has(svc.name) ? `Showing ${svc.name}` : `Hiding ${svc.name}`);
+        }
       }
       return;
     }
 
-    // Jump to service: 1-9
+    // Solo a service: 1-9 shows only that service's logs; press the same
+    // digit again (or 'a') to go back to viewing all services.
     if (/^[1-9]$/.test(input)) {
       const idx = Number.parseInt(input, 10) - 1;
       const svc = services[idx];
       if (svc) {
-        const first = filteredEntries.findIndex((e) => e.service === svc.name);
-        if (first >= 0) setSelectedIndex(first);
+        setIsolatedService((prev) => {
+          const next = prev === svc.name ? null : svc.name;
+          flashStatusMessage(next ? `Showing only ${svc.name}` : 'Showing all services');
+          return next;
+        });
+        followTail.current = false;
+        setSelectedIndex(0);
       }
     }
   });
@@ -307,6 +336,7 @@ export function App({
             <ServiceSidebar
               services={services}
               hiddenServices={hiddenServices}
+              isolatedService={isolatedService}
               tracker={tracker}
             />
           </Box>
@@ -333,6 +363,7 @@ export function App({
         highVolume={highVolume}
         tracker={tracker}
         statusMessage={statusMessage}
+        isolatedService={isolatedService}
       />
       {overlay !== 'none' && (
         <Backdrop width={dimensions.width} height={dimensions.height} backgroundColor={theme.sidebar.bg} />
