@@ -1,7 +1,9 @@
 import { existsSync } from 'node:fs';
 import { join } from 'node:path';
-import { safeRead } from './utils.js';
+import { safeRead, hasAncestorFile } from './utils.js';
 import type { RawService } from './types.js';
+
+const MARKERS = ['pyproject.toml', 'requirements.txt', 'Pipfile', 'setup.py', 'manage.py'];
 
 const ENTRY_CANDIDATES = [
   'main.py',
@@ -23,8 +25,13 @@ function toModule(candidate: string): string {
 }
 
 export function detectPythonServices(dir: string): RawService[] {
-  const markers = ['pyproject.toml', 'requirements.txt', 'Pipfile', 'setup.py', 'manage.py'];
-  if (!markers.some((m) => existsSync(join(dir, m)))) return [];
+  const hasManifest = MARKERS.some((m) => existsSync(join(dir, m)));
+  const hasEntryFile = ENTRY_CANDIDATES.some((c) => existsSync(join(dir, c)));
+  if (!hasManifest && !hasEntryFile) return [];
+  // No local manifest, but an ancestor has one: this dir is just a regular
+  // module within that project (e.g. a package folder that happens to
+  // contain a main.py), not a standalone script.
+  if (!hasManifest && hasAncestorFile(dir, MARKERS)) return [];
 
   const runner = pythonRunner(dir);
 

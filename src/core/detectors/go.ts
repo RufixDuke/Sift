@@ -1,7 +1,7 @@
 import { existsSync, readdirSync } from 'node:fs';
 import { join, basename } from 'node:path';
 import type { ServiceType } from '../../types/index.js';
-import { safeRead } from './utils.js';
+import { safeRead, hasAncestorFile } from './utils.js';
 import type { RawService } from './types.js';
 
 function moduleName(dir: string): string {
@@ -22,8 +22,28 @@ function safeListDirs(dir: string): string[] {
   }
 }
 
+function safeListGoFiles(dir: string): string[] {
+  try {
+    return readdirSync(dir, { withFileTypes: true })
+      .filter((d) => d.isFile() && d.name.endsWith('.go') && !d.name.endsWith('_test.go'))
+      .map((d) => d.name)
+      .sort((a, b) => (a === 'main.go' ? -1 : b === 'main.go' ? 1 : a.localeCompare(b)));
+  } catch {
+    return [];
+  }
+}
+
 export function detectGoServices(dir: string): RawService[] {
-  if (!existsSync(join(dir, 'go.mod'))) return [];
+  if (!existsSync(join(dir, 'go.mod'))) {
+    // No go.mod anywhere in the tree: `go run .` requires a module, but a bare
+    // main.go can still be run directly (GOPATH-less single-package mode),
+    // which is how simple scripts and tutorials are commonly run. If an
+    // ancestor directory has go.mod, this dir is just a regular package
+    // within that module (e.g. an internal/ package), not a standalone script.
+    if (!existsSync(join(dir, 'main.go')) || hasAncestorFile(dir, ['go.mod'])) return [];
+    const goFiles = safeListGoFiles(dir);
+    return [{ name: basename(dir), command: `go run ${goFiles.join(' ')}`, type: 'server' }];
+  }
 
   const cmdDir = join(dir, 'cmd');
   if (existsSync(cmdDir)) {

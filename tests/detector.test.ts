@@ -66,6 +66,26 @@ describe('detectServices', () => {
     expect(new Set(colors).size).toBe(colors.length);
   });
 
+  describe('node (manifest-less)', () => {
+    it('detects a bare Express-style script with no package.json', () => {
+      writeFileSync(
+        join(tempDir, 'index.js'),
+        'const app = require("express")();\napp.listen(3000);\n',
+      );
+
+      const services = detectServices({ packagePath: join(tempDir, 'package.json') });
+      expect(services).toHaveLength(1);
+      expect(services[0].command).toBe('node index.js');
+    });
+
+    it('ignores a plain script that does not start a server', () => {
+      writeFileSync(join(tempDir, 'index.js'), 'console.log("just a script");\n');
+
+      const services = detectServices({ packagePath: join(tempDir, 'package.json') });
+      expect(services).toEqual([]);
+    });
+  });
+
   describe('python', () => {
     it('detects a Django project and its Celery worker', () => {
       writeFileSync(join(tempDir, 'manage.py'), '#!/usr/bin/env python');
@@ -106,6 +126,24 @@ describe('detectServices', () => {
       const services = detectServices({ packagePath: join(tempDir, 'package.json') });
       expect(services[0].command).toBe('poetry run python manage.py runserver');
     });
+
+    it('detects a bare Python script with no manifest file at all', () => {
+      writeFileSync(join(tempDir, 'main.py'), 'print("hello")\n');
+
+      const services = detectServices({ packagePath: join(tempDir, 'package.json') });
+      expect(services).toHaveLength(1);
+      expect(services[0].command).toBe('python main.py');
+    });
+
+    it('does not duplicate a FastAPI app/main.py entry when recursing into app/', () => {
+      writeFileSync(join(tempDir, 'requirements.txt'), 'fastapi\nuvicorn\n');
+      mkdirSync(join(tempDir, 'app'));
+      writeFileSync(join(tempDir, 'app', 'main.py'), 'from fastapi import FastAPI\napp = FastAPI()\n');
+
+      const services = detectServices({ packagePath: join(tempDir, 'package.json') });
+      expect(services).toHaveLength(1);
+      expect(services[0].command).toBe('uvicorn app.main:app --reload');
+    });
   });
 
   describe('go', () => {
@@ -132,6 +170,14 @@ describe('detectServices', () => {
       expect(services.find((s) => s.name === 'api')?.command).toBe('go run ./cmd/api');
       expect(services.find((s) => s.name === 'worker')?.type).toBe('worker');
     });
+
+    it('detects a bare main.go with no go.mod (module-less script)', () => {
+      writeFileSync(join(tempDir, 'main.go'), 'package main\n\nfunc main() {}\n');
+
+      const services = detectServices({ packagePath: join(tempDir, 'package.json') });
+      expect(services).toHaveLength(1);
+      expect(services[0].command).toBe('go run main.go');
+    });
   });
 
   describe('ruby', () => {
@@ -152,6 +198,14 @@ describe('detectServices', () => {
       const services = detectServices({ packagePath: join(tempDir, 'package.json') });
       expect(services).toHaveLength(1);
       expect(services[0].command).toBe('bundle exec rackup');
+    });
+
+    it('detects a bare Ruby script with no Gemfile', () => {
+      writeFileSync(join(tempDir, 'app.rb'), 'puts "hello"\n');
+
+      const services = detectServices({ packagePath: join(tempDir, 'package.json') });
+      expect(services).toHaveLength(1);
+      expect(services[0].command).toBe('ruby app.rb');
     });
   });
 
@@ -187,6 +241,14 @@ describe('detectServices', () => {
       const services = detectServices({ packagePath: join(tempDir, 'package.json') });
       expect(services.find((s) => s.name === 'server')?.command).toBe('php artisan serve');
       expect(services.find((s) => s.name === 'worker')?.command).toBe('php artisan queue:work');
+    });
+
+    it('detects a bare index.php with no composer.json', () => {
+      writeFileSync(join(tempDir, 'index.php'), '<?php echo "hello"; ?>');
+
+      const services = detectServices({ packagePath: join(tempDir, 'package.json') });
+      expect(services).toHaveLength(1);
+      expect(services[0].command).toBe('php -S localhost:8000');
     });
   });
 

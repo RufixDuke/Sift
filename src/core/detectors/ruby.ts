@@ -1,10 +1,22 @@
 import { existsSync } from 'node:fs';
 import { join } from 'node:path';
-import { safeRead } from './utils.js';
+import { safeRead, hasAncestorFile } from './utils.js';
 import type { RawService } from './types.js';
 
+const SCRIPT_CANDIDATES = ['main.rb', 'app.rb', 'server.rb'];
+
+function detectPlainRubyScript(dir: string): RawService[] {
+  if (hasAncestorFile(dir, ['Gemfile'])) return [];
+  for (const candidate of SCRIPT_CANDIDATES) {
+    if (existsSync(join(dir, candidate))) {
+      return [{ name: 'server', command: `ruby ${candidate}`, type: 'server' }];
+    }
+  }
+  return [];
+}
+
 export function detectRubyServices(dir: string): RawService[] {
-  if (!existsSync(join(dir, 'Gemfile'))) return [];
+  if (!existsSync(join(dir, 'Gemfile'))) return detectPlainRubyScript(dir);
 
   const gemfile = safeRead(join(dir, 'Gemfile')).toLowerCase();
   const isRails =
