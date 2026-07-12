@@ -26,7 +26,7 @@ export function Docs(): React.ReactElement {
       <main className="pt-32 pb-20" style={{ paddingInline: 'var(--gutter)' }}>
         <div className="grid grid-cols-12 gap-x-4 gap-y-12">
           <div className="col-span-12 md:col-span-3">
-            <SectionLabel className="mb-4">Documentation</SectionLabel>
+            <SectionLabel className="mb-4">Documentation.</SectionLabel>
             <nav className="flex flex-col gap-3 mb-8">
               <a href="#quickstart" className="font-mono text-label tracking-label uppercase text-ink/80 hover:text-clay transition-colors">Quickstart</a>
               <a href="#formats" className="font-mono text-label tracking-label uppercase text-ink/80 hover:text-clay transition-colors">Supported formats</a>
