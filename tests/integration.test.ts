@@ -4,9 +4,10 @@ import { resolve } from 'node:path';
 import { parseLogLine } from '../src/core/parser.js';
 import { detectServices } from '../src/core/detector.js';
 import { MultiLineAssembler } from '../src/core/multiline.js';
-import { mkdtempSync, writeFileSync, rmSync } from 'node:fs';
+import { mkdtempSync, writeFileSync, rmSync, appendFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+import { readLines } from '../src/cli/commands/run.js';
 
 const FIXTURES_DIR = resolve(process.cwd(), 'tests/fixtures');
 
@@ -81,3 +82,29 @@ describe('detectServices integration', () => {
     rmSync(tempDir, { recursive: true, force: true });
   });
 });
+
+describe('readLines file follow', () => {
+  it('reads existing content and picks up appended lines', async () => {
+    const tempDir = mkdtempSync(join(tmpdir(), 'sift-readlines-'));
+    const filePath = join(tempDir, 'app.log');
+    writeFileSync(filePath, 'first line\nsecond line\n');
+
+    const lines: string[] = [];
+    const reader = readLines(filePath, (line) => lines.push(line));
+
+    // Wait for the initial read to complete.
+    await new Promise((resolve) => setTimeout(resolve, 100));
+    expect(lines).toEqual(['first line', 'second line']);
+
+    appendFileSync(filePath, 'third line\n');
+    await new Promise((resolve) => setTimeout(resolve, 500));
+
+    expect(lines).toEqual(['first line', 'second line', 'third line']);
+
+    reader.stop();
+    await reader.done;
+
+    rmSync(tempDir, { recursive: true, force: true });
+  });
+});
+

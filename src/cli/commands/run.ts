@@ -1,4 +1,4 @@
-import { createReadStream } from 'node:fs';
+import { createReadStream, watchFile, unwatchFile, statSync } from 'node:fs';
 import { createInterface } from 'node:readline';
 import { render } from 'ink';
 import React from 'react';
@@ -160,6 +160,90 @@ export async function runCommand(options: RunOptions): Promise<void> {
   process.off('SIGTERM', handleShutdown);
 }
 
+interface LineReaderHandle {
+  stop: () => void;
+  done: Promise<void>;
+}
+
+export function readLines(filePath: string, onLine: (line: string) => void): LineReaderHandle {
+  let stopped = false;
+  let watcher: ReturnType<typeof watchFile> | null = null;
+  let resolveWait: (() => void) | null = null;
+
+  const stop = () => {
+    stopped = true;
+    if (resolveWait) {
+      resolveWait();
+      resolveWait = null;
+    }
+    if (watcher) {
+      unwatchFile(filePath, watcher);
+      watcher = null;
+    }
+  };
+
+  const readChunk = async (start: number, end: number) => {
+    const stream = createReadStream(filePath, { start, end });
+    const rl = createInterface({ input: stream, crlfDelay: Infinity });
+    for await (const line of rl) {
+      if (stopped) break;
+      onLine(line);
+    }
+  };
+
+  const waitForChange = () =>
+    new Promise<void>((resolve) => {
+      resolveWait = resolve;
+      watcher = watchFile(filePath, { interval: 200 }, (curr, prev) => {
+        if (curr.size !== prev.size || curr.mtimeMs !== prev.mtimeMs) {
+          if (watcher) {
+            unwatchFile(filePath, watcher);
+            watcher = null;
+          }
+          if (resolveWait) {
+            resolveWait();
+            resolveWait = null;
+          }
+        }
+      });
+    });
+
+  const done = (async () => {
+    if (filePath === '-') {
+      const rl = createInterface({ input: process.stdin, crlfDelay: Infinity });
+      for await (const line of rl) {
+        if (stopped) break;
+        onLine(line);
+      }
+      return;
+    }
+
+    let position = 0;
+
+    const initialStats = statSync(filePath);
+    if (initialStats.size > 0) {
+      await readChunk(0, initialStats.size - 1);
+      position = initialStats.size;
+    }
+
+    while (!stopped) {
+      await waitForChange();
+      if (stopped) break;
+
+      const stats = statSync(filePath);
+      if (stats.size > position) {
+        await readChunk(position, stats.size - 1);
+        position = stats.size;
+      } else if (stats.size < position) {
+        // File was truncated or rotated; resume from the beginning.
+        position = 0;
+      }
+    }
+  })();
+
+  return { stop, done };
+}
+
 async function runFileMode(
   filePath: string,
   settings: { bufferSize: number; stripAnsi: boolean },
@@ -167,7 +251,6 @@ async function runFileMode(
   sessionName?: string,
 ): Promise<void> {
   const serviceName = 'file';
-  const input = filePath === '-' ? process.stdin : createReadStream(filePath);
   const buffer = new LogBuffer({ capacity: settings.bufferSize });
   const tracker = new MetricsTracker();
   const assembler = new MultiLineAssembler();
@@ -191,9 +274,14 @@ async function runFileMode(
     persistence?.append(entry);
   });
 
-  const rl = createInterface({ input, crlfDelay: Infinity });
+  const flushInterval = setInterval(() => {
+    assembler.flush();
+  }, 200);
 
-  for await (const line of rl) {
+  const states = [createServiceState({ name: serviceName, command: filePath }, 0)];
+  states[0].status = 'running';
+
+  const reader = readLines(filePath, (line) => {
     const safe = isPrintableLine(line) ? line : replaceNonPrintable(line);
     assembler.feed({
       raw: safe,
@@ -202,13 +290,7 @@ async function runFileMode(
       serviceColor: '#00BCD4',
       sequence: 0,
     });
-  }
-
-  assembler.flush();
-  persistence?.flush();
-
-  const states = [createServiceState({ name: serviceName, command: filePath }, 0)];
-  states[0].status = 'running';
+  });
 
   const app = render(
     React.createElement(App, {
@@ -218,10 +300,28 @@ async function runFileMode(
       paused: false,
       stripAnsi: settings.stripAnsi,
       onPauseToggle: () => {},
-      onQuit: () => {},
+      onQuit: () => {
+        reader.stop();
+      },
     }),
   );
 
+  const handleShutdown = () => {
+    clearInterval(flushInterval);
+    reader.stop();
+  };
+
+  process.once('SIGINT', handleShutdown);
+  process.once('SIGTERM', handleShutdown);
+
   await app.waitUntilExit();
+  reader.stop();
+  clearInterval(flushInterval);
+  assembler.flush();
+  persistence?.flush();
+  await reader.done;
   persistence?.close();
+
+  process.off('SIGINT', handleShutdown);
+  process.off('SIGTERM', handleShutdown);
 }

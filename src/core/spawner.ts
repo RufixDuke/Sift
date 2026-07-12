@@ -1,5 +1,6 @@
 import { spawn, type ChildProcess } from 'node:child_process';
 import { EventEmitter } from 'node:events';
+import { resolve, delimiter } from 'node:path';
 import type { ServiceConfig, ServiceState, ServiceStatus } from '../types/index.js';
 import { SERVICE_COLORS } from '../types/index.js';
 
@@ -51,13 +52,35 @@ export class ServiceSpawner extends EventEmitter {
     service.status = 'starting';
     this.updateStatus(service);
 
-    const child = spawn(service.command, [], {
-      cwd: service.cwd,
-      env: { ...process.env, ...service.env },
-      shell: true,
-      detached: false,
-      stdio: ['ignore', 'pipe', 'pipe'],
-    });
+    const npmRunMatch = service.command.match(/^npm run (\S+)$/);
+    let child: ChildProcess;
+
+    const env = {
+      ...process.env,
+      ...service.env,
+      PATH: [
+        resolve(service.cwd ?? '.', 'node_modules', '.bin'),
+        process.env.PATH,
+      ].join(delimiter),
+    };
+
+    if (npmRunMatch) {
+      child = spawn('npm', ['run', npmRunMatch[1]], {
+        cwd: service.cwd,
+        env,
+        shell: false,
+        detached: false,
+        stdio: ['ignore', 'pipe', 'pipe'],
+      });
+    } else {
+      child = spawn(service.command, [], {
+        cwd: service.cwd,
+        env,
+        shell: true,
+        detached: false,
+        stdio: ['ignore', 'pipe', 'pipe'],
+      });
+    }
 
     service.pid = child.pid;
     service.status = 'running';

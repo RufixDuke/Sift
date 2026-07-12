@@ -53,6 +53,19 @@ export function App({
   const followTail = useRef(true);
   const prevFilteredLength = useRef(0);
 
+  const filteredEntries = entries.filter((e) => {
+    if (filters.level && filters.level !== 'all' && e.level !== filters.level) return false;
+    if (filters.query && !e.raw.toLowerCase().includes(filters.query.toLowerCase())) return false;
+    if (hiddenServices.has(e.service)) return false;
+    return true;
+  });
+
+  const matchCount = filters.query
+    ? filteredEntries.filter((e) => e.raw.toLowerCase().includes(filters.query.toLowerCase())).length
+    : 0;
+
+  const selectedEntry = filteredEntries[Math.min(selectedIndex, Math.max(0, filteredEntries.length - 1))];
+
   const scheduleRender = useCallback(() => {
     if (pendingRender.current !== null) return;
     pendingRender.current = setTimeout(() => {
@@ -94,19 +107,6 @@ export function App({
       lastVolume.current = { count: entries.length, at: now, high: entries.length - count > 60 };
     }
   }, [entries.length]);
-
-  const filteredEntries = entries.filter((e) => {
-    if (filters.level && filters.level !== 'all' && e.level !== filters.level) return false;
-    if (filters.query && !e.raw.toLowerCase().includes(filters.query.toLowerCase())) return false;
-    if (hiddenServices.has(e.service)) return false;
-    return true;
-  });
-
-  const matchCount = filters.query
-    ? filteredEntries.filter((e) => e.raw.toLowerCase().includes(filters.query.toLowerCase())).length
-    : 0;
-
-  const selectedEntry = filteredEntries[Math.min(selectedIndex, Math.max(0, filteredEntries.length - 1))];
 
   useInput((input, key) => {
     if (overlay === 'search') {
