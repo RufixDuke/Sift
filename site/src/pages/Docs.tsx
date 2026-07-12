@@ -45,7 +45,7 @@ export function Docs(): React.ReactElement {
               </a>
               <a href="https://github.com/RufixDuke/Sift/blob/main/LICENSE" target="_blank" rel="noreferrer">
                 <img
-                  src="https://img.shields.io/npm/l/sift-logs?style=flat-square&color=86897F&labelColor=1A1D1B"
+                  src="https://img.shields.io/github/license/RufixDuke/Sift?style=flat-square&color=86897F&labelColor=1A1D1B"
                   alt="license"
                   className="h-6"
                 />
