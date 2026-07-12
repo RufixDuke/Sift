@@ -33,6 +33,14 @@
   ],
   "author": "Abdul-Qudus Rufai",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/RufixDuke/Sift.git"
+  },
+  "bugs": {
+    "url": "https://github.com/RufixDuke/Sift/issues"
+  },
+  "homepage": "https://github.com/RufixDuke/Sift#readme",
   "engines": {
     "node": ">=18.0.0"
   },
