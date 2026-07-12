@@ -17,7 +17,7 @@ export function Nav(): React.ReactElement {
         <div className="hidden md:flex col-span-6 justify-center gap-8">
           <UnderlineLink to="/docs">Docs</UnderlineLink>
           <UnderlineLink to="/#install">Install</UnderlineLink>
-          <UnderlineLink href="https://github.com/abdul-qudus/sift">GitHub</UnderlineLink>
+          <UnderlineLink href="https://github.com/RufixDuke/Sift">GitHub</UnderlineLink>
         </div>
         <div className="col-span-6 md:col-span-3 flex justify-end">
         </div>

@@ -51,7 +51,7 @@ export function Hero(): React.ReactElement {
             </button>
           </div>
           <a
-            href="https://github.com/abdul-qudus/sift"
+            href="https://github.com/RufixDuke/Sift"
             className="font-mono text-label tracking-label uppercase text-muted hover:text-clay transition-colors duration-300"
           >
             View on GitHub →

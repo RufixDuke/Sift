@@ -7,8 +7,8 @@ interface StarButtonProps {
 }
 
 export function StarButton({
-  owner = 'abdul-qudus',
-  repo = 'sift',
+  owner = 'RufixDuke',
+  repo = 'Sift',
   className = '',
 }: StarButtonProps): React.ReactElement {
   return (

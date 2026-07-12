@@ -43,7 +43,7 @@ export function Docs(): React.ReactElement {
                   className="h-6"
                 />
               </a>
-              <a href="https://github.com/abdul-qudus/sift/blob/main/LICENSE" target="_blank" rel="noreferrer">
+              <a href="https://github.com/RufixDuke/Sift/blob/main/LICENSE" target="_blank" rel="noreferrer">
                 <img
                   src="https://img.shields.io/npm/l/sift-logs?style=flat-square&color=86897F&labelColor=1A1D1B"
                   alt="license"

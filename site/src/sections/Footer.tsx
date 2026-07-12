@@ -16,7 +16,7 @@ export function Footer(): React.ReactElement {
 
       <div className="col-span-12 md:col-span-3 md:col-start-10 flex justify-start gap-6">
         <a
-          href="https://github.com/abdul-qudus/sift"
+          href="https://github.com/RufixDuke/Sift"
           className="font-mono text-label tracking-label uppercase text-muted hover:text-clay transition-colors duration-300"
         >
           GitHub

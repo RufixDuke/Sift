@@ -4,7 +4,7 @@
   "description": "Intelligent log aggregator for local development — the htop of dev logs",
   "type": "module",
   "bin": {
-    "sift": "./dist/cli.js"
+    "sift": "dist/cli.js"
   },
   "exports": {
     ".": {
