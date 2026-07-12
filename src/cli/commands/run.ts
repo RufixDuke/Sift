@@ -60,7 +60,11 @@ export async function runCommand(options: RunOptions): Promise<void> {
   }
 
   if (services.length === 0) {
-    console.error('No services found. Run `sift config init` or ensure a package.json is present.');
+    console.error(
+      'No services found. Run `sift config init`, or ensure a recognizable project file is present ' +
+        '(package.json, pyproject.toml, requirements.txt, manage.py, go.mod, Gemfile, Cargo.toml, ' +
+        'composer.json, pom.xml, build.gradle, a .csproj file, or a Procfile).',
+    );
     process.exit(1);
   }
 
