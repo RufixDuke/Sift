@@ -1,8 +1,34 @@
 import { spawn, type ChildProcess } from 'node:child_process';
 import { EventEmitter } from 'node:events';
-import { resolve, delimiter } from 'node:path';
+import { resolve, delimiter, join } from 'node:path';
+import { mkdtempSync, writeFileSync, rmSync } from 'node:fs';
+import { tmpdir } from 'node:os';
 import type { ServiceConfig, ServiceState, ServiceStatus } from '../types/index.js';
 import { SERVICE_COLORS } from '../types/index.js';
+
+// Like CPython, Ruby's MRI buffers stdout/stderr in full-block mode once
+// they're not connected to a tty (which is always the case for services
+// Sift spawns). There's no single env var to disable this like
+// PYTHONUNBUFFERED, but RUBYOPT can `-r`equire a script at interpreter
+// startup, so we generate one that forces sync mode and require it for
+// every spawned process — it's a no-op for anything that isn't Ruby.
+let rubySyncHelperPath: string | undefined;
+
+function getRubySyncHelperPath(): string {
+  if (!rubySyncHelperPath) {
+    const dir = mkdtempSync(join(tmpdir(), 'sift-ruby-'));
+    rubySyncHelperPath = join(dir, 'force_sync.rb');
+    writeFileSync(rubySyncHelperPath, 'STDOUT.sync = true\nSTDERR.sync = true\n');
+    process.once('exit', () => {
+      try {
+        rmSync(dir, { recursive: true, force: true });
+      } catch {
+        // best-effort cleanup
+      }
+    });
+  }
+  return rubySyncHelperPath;
+}
 
 export interface RawLineEvent {
   raw: string;
@@ -55,9 +81,17 @@ export class ServiceSpawner extends EventEmitter {
     const npmRunMatch = service.command.match(/^npm run (\S+)$/);
     let child: ChildProcess;
 
+    const rubyOpt = [`-r${getRubySyncHelperPath()}`, process.env.RUBYOPT].filter(Boolean).join(' ');
+
     const env = {
       ...process.env,
       FORCE_COLOR: '1',
+      // Sift always spawns services with piped (non-tty) stdio, which makes
+      // CPython fall back to fully block-buffered stdout instead of line
+      // buffering. Without this, printed output (and anything not explicitly
+      // flushed) can sit unseen for a long time — or until the process exits.
+      PYTHONUNBUFFERED: '1',
+      RUBYOPT: rubyOpt,
       ...service.env,
       PATH: [
         resolve(service.cwd ?? '.', 'node_modules', '.bin'),
