@@ -9,6 +9,7 @@ import { StatusBar } from './components/StatusBar.js';
 import { SearchOverlay } from './components/SearchOverlay.js';
 import { HelpOverlay } from './components/HelpOverlay.js';
 import { DetailView } from './components/DetailView.js';
+import { Backdrop } from './components/Backdrop.js';
 import { theme } from './theme.js';
 
 export interface AppProps {
@@ -289,14 +290,7 @@ export function App({
         tracker={tracker}
       />
       {overlay !== 'none' && (
-        <Box
-          position="absolute"
-          top={0}
-          left={0}
-          width={dimensions.width}
-          height={dimensions.height}
-          backgroundColor={theme.sidebar.bg}
-        />
+        <Backdrop width={dimensions.width} height={dimensions.height} backgroundColor={theme.sidebar.bg} />
       )}
       {overlay === 'search' && (
         <SearchOverlay query={query} onChange={handleSearchChange} matchCount={matchCount} />
