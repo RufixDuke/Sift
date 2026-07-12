@@ -10,6 +10,7 @@ import { SearchOverlay } from './components/SearchOverlay.js';
 import { HelpOverlay } from './components/HelpOverlay.js';
 import { DetailView } from './components/DetailView.js';
 import { Backdrop } from './components/Backdrop.js';
+import { copyToClipboard } from '../core/clipboard.js';
 import { theme } from './theme.js';
 
 export interface AppProps {
@@ -42,9 +43,13 @@ export function App({
   const [selectedIndex, setSelectedIndex] = useState(0);
   const [filters, setFilters] = useState<Filters>({ level: 'all' });
   const [hiddenServices, setHiddenServices] = useState<Set<string>>(new Set());
+  const [isolatedService, setIsolatedService] = useState<string | null>(null);
   const [overlay, setOverlay] = useState<OverlayMode>('none');
   const [query, setQuery] = useState('');
   const [expandedIds, setExpandedIds] = useState<Set<number>>(new Set());
+  const [wrapLines, setWrapLines] = useState(false);
+  const [showTimestamps, setShowTimestamps] = useState(true);
+  const [statusMessage, setStatusMessage] = useState<string | null>(null);
   const [dimensions, setDimensions] = useState({
     width: stdout.columns || 80,
     height: stdout.rows || 24,
@@ -53,11 +58,29 @@ export function App({
   const lastVolume = useRef({ count: 0, at: Date.now(), high: false });
   const followTail = useRef(true);
   const prevFilteredLength = useRef(0);
+  const statusMessageTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const pendingServicePrefix = useRef(false);
+  const pendingServicePrefixTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const flashStatusMessage = useCallback((message: string) => {
+    if (statusMessageTimeout.current) clearTimeout(statusMessageTimeout.current);
+    setStatusMessage(message);
+    statusMessageTimeout.current = setTimeout(() => setStatusMessage(null), 2000);
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      if (statusMessageTimeout.current) clearTimeout(statusMessageTimeout.current);
+      if (pendingServicePrefixTimeout.current) clearTimeout(pendingServicePrefixTimeout.current);
+    };
+  }, []);
 
   const filteredEntries = entries.filter((e) => {
     if (filters.level && filters.level !== 'all' && e.level !== filters.level) return false;
     if (filters.query && !e.raw.toLowerCase().includes(filters.query.toLowerCase())) return false;
-    if (hiddenServices.has(e.service)) return false;
+    if (isolatedService) {
+      if (e.service !== isolatedService) return false;
+    } else if (hiddenServices.has(e.service)) return false;
     return true;
   });
 
@@ -187,6 +210,7 @@ export function App({
       setFilters((f) => ({ ...f, level: f.level === 'info' ? 'all' : 'info' }));
     } else if (input === 'a') {
       setFilters({ level: 'all' });
+      setIsolatedService(null);
     }
 
     if (input === 'n' && filters.query) {
@@ -205,6 +229,31 @@ export function App({
       onRestartService(selectedEntry.service);
     }
 
+    if (input === 'c') {
+      if (selectedEntry) {
+        copyToClipboard(selectedEntry.raw).then((ok) => {
+          flashStatusMessage(ok ? 'Copied log to clipboard' : 'Clipboard copy failed');
+        });
+      }
+      return;
+    }
+
+    if (input === 'l') {
+      setWrapLines((prev) => {
+        flashStatusMessage(!prev ? 'Line wrapping on' : 'Line wrapping off');
+        return !prev;
+      });
+      return;
+    }
+
+    if (input === 't') {
+      setShowTimestamps((prev) => {
+        flashStatusMessage(!prev ? 'Timestamps on' : 'Timestamps off');
+        return !prev;
+      });
+      return;
+    }
+
     if (input === '\r' || input === '\n') {
       if (selectedEntry?.message.includes('\n')) {
         setExpandedIds((prev) => {
@@ -216,29 +265,51 @@ export function App({
       }
     }
 
-    // Service toggles: s1, s2, ... s9
-    const serviceToggleMatch = input.match(/^s(\d)$/);
-    if (serviceToggleMatch) {
-      const idx = Number.parseInt(serviceToggleMatch[1], 10) - 1;
-      const svc = services[idx];
-      if (svc) {
-        setHiddenServices((prev) => {
-          const next = new Set(prev);
-          if (next.has(svc.name)) next.delete(svc.name);
-          else next.add(svc.name);
-          return next;
-        });
+    // Service toggles: 's' then a digit, e.g. s1, s2 ... s9.
+    // Ink delivers each keystroke as a separate input event, so "s1" never
+    // arrives as one string — track the 's' prefix and consume the digit
+    // that follows within a short window.
+    if (input === 's') {
+      pendingServicePrefix.current = true;
+      if (pendingServicePrefixTimeout.current) clearTimeout(pendingServicePrefixTimeout.current);
+      pendingServicePrefixTimeout.current = setTimeout(() => {
+        pendingServicePrefix.current = false;
+      }, 800);
+      return;
+    }
+
+    if (pendingServicePrefix.current) {
+      pendingServicePrefix.current = false;
+      if (pendingServicePrefixTimeout.current) clearTimeout(pendingServicePrefixTimeout.current);
+      if (/^[1-9]$/.test(input)) {
+        const idx = Number.parseInt(input, 10) - 1;
+        const svc = services[idx];
+        if (svc) {
+          setHiddenServices((prev) => {
+            const next = new Set(prev);
+            if (next.has(svc.name)) next.delete(svc.name);
+            else next.add(svc.name);
+            return next;
+          });
+          flashStatusMessage(hiddenServices.has(svc.name) ? `Showing ${svc.name}` : `Hiding ${svc.name}`);
+        }
       }
       return;
     }
 
-    // Jump to service: 1-9
+    // Solo a service: 1-9 shows only that service's logs; press the same
+    // digit again (or 'a') to go back to viewing all services.
     if (/^[1-9]$/.test(input)) {
       const idx = Number.parseInt(input, 10) - 1;
       const svc = services[idx];
       if (svc) {
-        const first = filteredEntries.findIndex((e) => e.service === svc.name);
-        if (first >= 0) setSelectedIndex(first);
+        setIsolatedService((prev) => {
+          const next = prev === svc.name ? null : svc.name;
+          flashStatusMessage(next ? `Showing only ${svc.name}` : 'Showing all services');
+          return next;
+        });
+        followTail.current = false;
+        setSelectedIndex(0);
       }
     }
   });
@@ -265,6 +336,7 @@ export function App({
             <ServiceSidebar
               services={services}
               hiddenServices={hiddenServices}
+              isolatedService={isolatedService}
               tracker={tracker}
             />
           </Box>
@@ -277,6 +349,8 @@ export function App({
             height={dimensions.height - 2}
             expandedIds={expandedIds}
             stripAnsi={stripAnsi}
+            wrapLines={wrapLines}
+            showTimestamps={showTimestamps}
           />
         </Box>
       </Box>
@@ -288,6 +362,8 @@ export function App({
         width={dimensions.width}
         highVolume={highVolume}
         tracker={tracker}
+        statusMessage={statusMessage}
+        isolatedService={isolatedService}
       />
       {overlay !== 'none' && (
         <Backdrop width={dimensions.width} height={dimensions.height} backgroundColor={theme.sidebar.bg} />

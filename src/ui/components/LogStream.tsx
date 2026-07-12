@@ -10,6 +10,17 @@ export interface LogStreamProps {
   height: number;
   expandedIds?: Set<number>;
   stripAnsi?: boolean;
+  wrapLines?: boolean;
+  showTimestamps?: boolean;
+}
+
+function chunkText(text: string, chunkWidth: number): string[] {
+  if (chunkWidth <= 0 || text.length === 0) return [text];
+  const lines: string[] = [];
+  for (let i = 0; i < text.length; i += chunkWidth) {
+    lines.push(text.slice(i, i + chunkWidth));
+  }
+  return lines;
 }
 
 export function LogStream({
@@ -19,6 +30,8 @@ export function LogStream({
   height,
   expandedIds = new Set(),
   stripAnsi = false,
+  wrapLines = false,
+  showTimestamps = true,
 }: LogStreamProps): React.ReactElement {
   const visibleCount = Math.max(0, height - 1);
   const endIndex = Math.max(0, entries.length - 1);
@@ -39,32 +52,69 @@ export function LogStream({
         const isExpanded = expandedIds.has(entry.id);
         const isMultiline = entry.message.includes('\n');
 
-        const left = `${display.timestamp} ${display.serviceTag.padEnd(10)} ${display.levelSymbol} `;
-        const available = Math.max(0, width - left.length - 3);
+        const timestampPart = showTimestamps ? `${display.timestamp} ` : '';
+        const left = `${timestampPart}${display.serviceTag.padEnd(10)} ${display.levelSymbol} `;
+        const indent = ' '.repeat(left.length);
         const source = stripAnsi ? display.message : entry.raw;
         const firstLine = source.split('\n')[0] ?? '';
-        const message = firstLine.length > available
-          ? firstLine.slice(0, available - 1) + '…'
-          : firstLine;
+        const continuationSuffix = isMultiline && !isExpanded ? ' …' : '';
+
+        const messageChunks = wrapLines
+          ? chunkText(firstLine, Math.max(1, width - left.length))
+          : [(() => {
+              const available = Math.max(0, width - left.length - continuationSuffix.length);
+              return firstLine.length > available
+                ? firstLine.slice(0, Math.max(0, available - 1)) + '…'
+                : firstLine;
+            })()];
+
+        const renderRow = (key: string, content: string, isFirst: boolean) => {
+          const raw = isFirst ? `${left}${content}` : `${indent}${content}`;
+          if (isSelected) {
+            const padded = raw.length < width ? raw.padEnd(width) : raw;
+            return (
+              <Text key={key} backgroundColor={theme.selection.bg} color={theme.selection.fg} bold>
+                {padded}
+              </Text>
+            );
+          }
+          return (
+            <Text key={key} color={isFirst ? levelStyle.fg : theme.muted.fg} bold={isFirst && levelStyle.bold}>
+              {isFirst ? (
+                <>
+                  {timestampPart}
+                  <Text color={theme.muted.fg}>{display.serviceTag.padEnd(10)}</Text>{' '}
+                  {display.levelSymbol} {content}
+                </>
+              ) : (
+                content
+              )}
+            </Text>
+          );
+        };
 
         return (
           <Box key={entry.id} flexDirection="column">
-            <Box>
-              {isSelected && <Text backgroundColor={theme.selection.bg}>{' '}</Text>}
-              <Text color={levelStyle.fg} bold={levelStyle.bold}>
-                {display.timestamp} <Text color={theme.muted.fg}>{display.serviceTag.padEnd(10)}</Text>{' '}
-                {display.levelSymbol} {message}
-                {isMultiline && !isExpanded && <Text color={theme.muted.fg}> …</Text>}
-              </Text>
-            </Box>
+            {messageChunks.map((chunk, chunkIdx) => {
+              const isLastChunk = chunkIdx === messageChunks.length - 1;
+              const content = isLastChunk ? `${chunk}${continuationSuffix}` : chunk;
+              return renderRow(`${entry.id}-${chunkIdx}`, content, chunkIdx === 0);
+            })}
             {isExpanded && (
-              <Box flexDirection="column" paddingLeft={left.length + 1}>
+              <Box flexDirection="column" paddingLeft={isSelected ? 0 : left.length + 1}>
                 {source
                   .split('\n')
                   .slice(1)
-                  .map((line, lineIdx) => (
-                    <Text key={lineIdx} color={theme.muted.fg}>{line.slice(0, width - left.length - 3)}</Text>
-                  ))}
+                  .map((line, lineIdx) => {
+                    const chunks = wrapLines ? chunkText(line, Math.max(1, width - left.length)) : [line.slice(0, width - left.length - 3)];
+                    return chunks.map((chunk, chunkIdx) => (
+                      <React.Fragment key={`${lineIdx}-${chunkIdx}`}>
+                        {isSelected
+                          ? renderRow(`${lineIdx}-${chunkIdx}`, chunk, false)
+                          : <Text color={theme.muted.fg}>{chunk}</Text>}
+                      </React.Fragment>
+                    ));
+                  })}
               </Box>
             )}
           </Box>
