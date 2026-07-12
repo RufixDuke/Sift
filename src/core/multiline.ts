@@ -82,19 +82,6 @@ export class MultiLineAssembler extends EventEmitter {
     // Caused by / ... x more lines
     if (/^(Caused by|\.\.\.\s+\d+ more)/.test(trimmed)) return true;
 
-    // Line without timestamp/level is likely a continuation
-    if (!this.hasTimestampOrLevel(trimmed)) return true;
-
     return false;
-  }
-
-  private hasTimestampOrLevel(line: string): boolean {
-    return (
-      /^\d{4}-\d{2}-\d{2}/.test(line) ||
-      /^\d{2}:\d{2}:\d{2}/.test(line) ||
-      /^\[/.test(line) ||
-      /\b(ERROR|WARN|WARNING|INFO|DEBUG|TRACE|FATAL|CRITICAL)\b/i.test(line) ||
-      /^\{/.test(line)
-    );
   }
 }

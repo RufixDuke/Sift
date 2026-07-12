@@ -57,6 +57,7 @@ export class ServiceSpawner extends EventEmitter {
 
     const env = {
       ...process.env,
+      FORCE_COLOR: '1',
       ...service.env,
       PATH: [
         resolve(service.cwd ?? '.', 'node_modules', '.bin'),
