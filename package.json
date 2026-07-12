@@ -1,6 +1,6 @@
 {
   "name": "sift-logs",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "description": "Intelligent log aggregator for local development — the htop of dev logs",
   "type": "module",
   "bin": {
