@@ -10,6 +10,7 @@ import { SearchOverlay } from './components/SearchOverlay.js';
 import { HelpOverlay } from './components/HelpOverlay.js';
 import { DetailView } from './components/DetailView.js';
 import { Backdrop } from './components/Backdrop.js';
+import { copyToClipboard } from '../core/clipboard.js';
 import { theme } from './theme.js';
 
 export interface AppProps {
@@ -45,6 +46,9 @@ export function App({
   const [overlay, setOverlay] = useState<OverlayMode>('none');
   const [query, setQuery] = useState('');
   const [expandedIds, setExpandedIds] = useState<Set<number>>(new Set());
+  const [wrapLines, setWrapLines] = useState(false);
+  const [showTimestamps, setShowTimestamps] = useState(true);
+  const [statusMessage, setStatusMessage] = useState<string | null>(null);
   const [dimensions, setDimensions] = useState({
     width: stdout.columns || 80,
     height: stdout.rows || 24,
@@ -53,6 +57,19 @@ export function App({
   const lastVolume = useRef({ count: 0, at: Date.now(), high: false });
   const followTail = useRef(true);
   const prevFilteredLength = useRef(0);
+  const statusMessageTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const flashStatusMessage = useCallback((message: string) => {
+    if (statusMessageTimeout.current) clearTimeout(statusMessageTimeout.current);
+    setStatusMessage(message);
+    statusMessageTimeout.current = setTimeout(() => setStatusMessage(null), 2000);
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      if (statusMessageTimeout.current) clearTimeout(statusMessageTimeout.current);
+    };
+  }, []);
 
   const filteredEntries = entries.filter((e) => {
     if (filters.level && filters.level !== 'all' && e.level !== filters.level) return false;
@@ -205,6 +222,31 @@ export function App({
       onRestartService(selectedEntry.service);
     }
 
+    if (input === 'c') {
+      if (selectedEntry) {
+        copyToClipboard(selectedEntry.raw).then((ok) => {
+          flashStatusMessage(ok ? 'Copied log to clipboard' : 'Clipboard copy failed');
+        });
+      }
+      return;
+    }
+
+    if (input === 'l') {
+      setWrapLines((prev) => {
+        flashStatusMessage(!prev ? 'Line wrapping on' : 'Line wrapping off');
+        return !prev;
+      });
+      return;
+    }
+
+    if (input === 't') {
+      setShowTimestamps((prev) => {
+        flashStatusMessage(!prev ? 'Timestamps on' : 'Timestamps off');
+        return !prev;
+      });
+      return;
+    }
+
     if (input === '\r' || input === '\n') {
       if (selectedEntry?.message.includes('\n')) {
         setExpandedIds((prev) => {
@@ -277,6 +319,8 @@ export function App({
             height={dimensions.height - 2}
             expandedIds={expandedIds}
             stripAnsi={stripAnsi}
+            wrapLines={wrapLines}
+            showTimestamps={showTimestamps}
           />
         </Box>
       </Box>
@@ -288,6 +332,7 @@ export function App({
         width={dimensions.width}
         highVolume={highVolume}
         tracker={tracker}
+        statusMessage={statusMessage}
       />
       {overlay !== 'none' && (
         <Backdrop width={dimensions.width} height={dimensions.height} backgroundColor={theme.sidebar.bg} />

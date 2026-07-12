@@ -13,9 +13,10 @@ export interface StatusBarProps {
   width: number;
   highVolume?: boolean;
   tracker?: MetricsTracker;
+  statusMessage?: string | null;
 }
 
-export function StatusBar({ services, totalLogs, paused, filters, width, highVolume = false, tracker }: StatusBarProps): React.ReactElement {
+export function StatusBar({ services, totalLogs, paused, filters, width, highVolume = false, tracker, statusMessage }: StatusBarProps): React.ReactElement {
   const running = services.filter((s) => s.status === 'running').length;
   const crashed = services.filter((s) => s.status === 'crashed' || s.status === 'unstable').length;
 
@@ -33,7 +34,9 @@ export function StatusBar({ services, totalLogs, paused, filters, width, highVol
   const metricsText = tracker ? `${formatNumber(globalRpm)}/min ${sparkline}` : '';
 
   const left = ` ${statusText} `;
-  const center = ` ${running}/${services.length} services | ${totalLogs} logs ${volumeText}`;
+  const center = statusMessage
+    ? ` ${statusMessage}`
+    : ` ${running}/${services.length} services | ${totalLogs} logs ${volumeText}`;
   const right = ` ${metricsText} ${levelText} ${queryText} [e/w/i/a] filter [h] help [q] quit `;
 
   const centerPad = Math.max(0, width - left.length - right.length);
@@ -41,7 +44,9 @@ export function StatusBar({ services, totalLogs, paused, filters, width, highVol
   return (
     <Box width={width} backgroundColor={theme.statusBar.bg}>
       <Text backgroundColor={statusBg} color={statusFg}>{left}</Text>
-      <Text color={theme.statusBar.fg}>{center.padEnd(centerPad)}</Text>
+      <Text backgroundColor={statusMessage ? theme.highlight.bg : undefined} color={statusMessage ? theme.highlight.fg : theme.statusBar.fg} bold={Boolean(statusMessage)}>
+        {center.padEnd(centerPad)}
+      </Text>
       <Text color={theme.statusBar.fg}>{right}</Text>
     </Box>
   );
