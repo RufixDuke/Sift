@@ -34,7 +34,7 @@ export function StatusBar({ services, totalLogs, paused, filters, width, highVol
 
   const left = ` ${statusText} `;
   const center = ` ${running}/${services.length} services | ${totalLogs} logs ${volumeText}`;
-  const right = ` ${metricsText} ${levelText} ${queryText} [h] help [q] quit `;
+  const right = ` ${metricsText} ${levelText} ${queryText} [e/w/i/a] filter [h] help [q] quit `;
 
   const centerPad = Math.max(0, width - left.length - right.length);
 

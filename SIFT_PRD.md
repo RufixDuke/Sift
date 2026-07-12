@@ -1414,15 +1414,6 @@ Implemented in `src/core/metrics.ts` and `src/utils/http.ts`:
 - [x] Compare two sessions: `sift diff session1 session2`
 - [x] Update it on the site also, the commands and all
 
-### 17.4 Team Sharing
-- `sift share` — generates a shareable URL with anonymized logs
-- Useful for: "Hey, can you look at this error?" without pasting logs in Slack
-
-### 17.5 Plugin System
-- Custom parsers as plugins: `sift --plugin ./my-parser.js`
-- Custom filters as plugins
-- Webhook notifications on errors
-
 ### 17.6 CI Mode (Parked — Contradicts Local-Dev Focus)
 
 > **Why parked:** CI mode contradicts Sift's core positioning as a local dev tool. Non-interactive JSON output is a different product. If needed, use `sift --file -` piped to `jq` instead.

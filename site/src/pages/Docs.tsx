@@ -5,6 +5,30 @@ import { Footer } from '../sections/Footer';
 import { SectionLabel } from '../components/SectionLabel';
 import { TerminalWindow } from '../components/TerminalWindow';
 
+const SHORTCUTS: [string, string][] = [
+  ['↑ / ↓', 'Scroll logs (1 line)'],
+  ['PgUp / PgDn', 'Scroll (10 lines)'],
+  ['Home / End', 'Jump to first / last log'],
+  ['Space', 'Pause / resume stream'],
+  ['/', 'Open search overlay'],
+  ['n / N', 'Next / previous search match'],
+  ['e', 'Filter errors'],
+  ['w', 'Filter warnings'],
+  ['i', 'Filter info'],
+  ['a', 'Show all levels'],
+  ['s1 … s9', 'Toggle service visibility'],
+  ['1 … 9', 'Jump to service in sidebar'],
+  ['Enter', 'Expand multi-line log / show trace'],
+  ['Backspace / Esc', 'Close overlay / return to full view'],
+  ['d', 'Show detail view for selected log'],
+  ['c', 'Copy selected log to clipboard'],
+  ['r', 'Restart selected service'],
+  ['l', 'Toggle line wrapping'],
+  ['t', 'Toggle timestamps'],
+  ['h / ?', 'Show help overlay'],
+  ['q / Ctrl+C', 'Quit Sift'],
+];
+
 const CONFIG_EXAMPLE = `{
   "$schema": "https://sift.dev/schema.json",
   "version": 1,
@@ -26,13 +50,14 @@ export function Docs(): React.ReactElement {
       <main className="pt-32 pb-20" style={{ paddingInline: 'var(--gutter)' }}>
         <div className="grid grid-cols-12 gap-x-4 gap-y-12">
           <div className="col-span-12 md:col-span-3">
-            <SectionLabel className="mb-4">Documentation</SectionLabel>
+            <SectionLabel className="mb-4">Documentation.</SectionLabel>
             <nav className="flex flex-col gap-3 mb-8">
               <a href="#quickstart" className="font-mono text-label tracking-label uppercase text-ink/80 hover:text-clay transition-colors">Quickstart</a>
               <a href="#formats" className="font-mono text-label tracking-label uppercase text-ink/80 hover:text-clay transition-colors">Supported formats</a>
               <a href="#metrics" className="font-mono text-label tracking-label uppercase text-ink/80 hover:text-clay transition-colors">Metrics</a>
               <a href="#persistence" className="font-mono text-label tracking-label uppercase text-ink/80 hover:text-clay transition-colors">Persistence</a>
               <a href="#commands" className="font-mono text-label tracking-label uppercase text-ink/80 hover:text-clay transition-colors">Commands</a>
+              <a href="#shortcuts" className="font-mono text-label tracking-label uppercase text-ink/80 hover:text-clay transition-colors">Shortcuts</a>
               <a href="#config" className="font-mono text-label tracking-label uppercase text-ink/80 hover:text-clay transition-colors">Config</a>
             </nav>
             <div className="flex flex-wrap gap-2">
@@ -204,6 +229,22 @@ export function Docs(): React.ReactElement {
                   </div>
                 ))}
               </dl>
+            </section>
+
+            <section id="shortcuts">
+              <h2 className="font-display text-3xl tracking-display text-ink mb-6">Keyboard shortcuts</h2>
+              <p className="text-ink/80 mb-6">
+                Available in the interactive viewer at any time — press <code className="font-mono text-sm text-clay">h</code> or{' '}
+                <code className="font-mono text-sm text-clay">?</code> in the app to bring this list up on the spot.
+              </p>
+              <div className="rounded-media bg-surface border border-line divide-y divide-line">
+                {SHORTCUTS.map(([key, desc]) => (
+                  <div key={key} className="flex items-center gap-6 px-4 py-3">
+                    <code className="font-mono text-sm text-clay w-36 shrink-0">{key}</code>
+                    <span className="text-ink/80">{desc}</span>
+                  </div>
+                ))}
+              </div>
             </section>
 
             <section id="config">

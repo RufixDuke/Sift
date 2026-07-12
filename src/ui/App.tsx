@@ -9,6 +9,7 @@ import { StatusBar } from './components/StatusBar.js';
 import { SearchOverlay } from './components/SearchOverlay.js';
 import { HelpOverlay } from './components/HelpOverlay.js';
 import { DetailView } from './components/DetailView.js';
+import { Backdrop } from './components/Backdrop.js';
 import { theme } from './theme.js';
 
 export interface AppProps {
@@ -50,6 +51,21 @@ export function App({
   });
   const pendingRender = useRef<number | null>(null);
   const lastVolume = useRef({ count: 0, at: Date.now(), high: false });
+  const followTail = useRef(true);
+  const prevFilteredLength = useRef(0);
+
+  const filteredEntries = entries.filter((e) => {
+    if (filters.level && filters.level !== 'all' && e.level !== filters.level) return false;
+    if (filters.query && !e.raw.toLowerCase().includes(filters.query.toLowerCase())) return false;
+    if (hiddenServices.has(e.service)) return false;
+    return true;
+  });
+
+  const matchCount = filters.query
+    ? filteredEntries.filter((e) => e.raw.toLowerCase().includes(filters.query.toLowerCase())).length
+    : 0;
+
+  const selectedEntry = filteredEntries[Math.min(selectedIndex, Math.max(0, filteredEntries.length - 1))];
 
   const scheduleRender = useCallback(() => {
     if (pendingRender.current !== null) return;
@@ -60,6 +76,13 @@ export function App({
       }
     }, 16) as unknown as number;
   }, [buffer, paused]);
+
+  useEffect(() => {
+    if (followTail.current && filteredEntries.length > 0) {
+      setSelectedIndex(filteredEntries.length - 1);
+    }
+    prevFilteredLength.current = filteredEntries.length;
+  }, [filteredEntries.length]);
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -85,19 +108,6 @@ export function App({
       lastVolume.current = { count: entries.length, at: now, high: entries.length - count > 60 };
     }
   }, [entries.length]);
-
-  const filteredEntries = entries.filter((e) => {
-    if (filters.level && filters.level !== 'all' && e.level !== filters.level) return false;
-    if (filters.query && !e.raw.toLowerCase().includes(filters.query.toLowerCase())) return false;
-    if (hiddenServices.has(e.service)) return false;
-    return true;
-  });
-
-  const matchCount = filters.query
-    ? filteredEntries.filter((e) => e.raw.toLowerCase().includes(filters.query.toLowerCase())).length
-    : 0;
-
-  const selectedEntry = filteredEntries[Math.min(selectedIndex, Math.max(0, filteredEntries.length - 1))];
 
   useInput((input, key) => {
     if (overlay === 'search') {
@@ -129,16 +139,28 @@ export function App({
     }
 
     if (key.upArrow) {
+      followTail.current = false;
       setSelectedIndex((prev) => Math.max(0, prev - 1));
     } else if (key.downArrow) {
-      setSelectedIndex((prev) => Math.min(filteredEntries.length - 1, prev + 1));
+      setSelectedIndex((prev) => {
+        const next = Math.min(filteredEntries.length - 1, prev + 1);
+        if (next === filteredEntries.length - 1) followTail.current = true;
+        return next;
+      });
     } else if (key.pageUp) {
+      followTail.current = false;
       setSelectedIndex((prev) => Math.max(0, prev - 10));
     } else if (key.pageDown) {
-      setSelectedIndex((prev) => Math.min(filteredEntries.length - 1, prev + 10));
+      setSelectedIndex((prev) => {
+        const next = Math.min(filteredEntries.length - 1, prev + 10);
+        if (next === filteredEntries.length - 1) followTail.current = true;
+        return next;
+      });
     } else if (key.home) {
+      followTail.current = false;
       setSelectedIndex(0);
     } else if (key.end) {
+      followTail.current = true;
       setSelectedIndex(filteredEntries.length - 1);
     }
 
@@ -228,6 +250,7 @@ export function App({
   const handleSearchChange = (value: string) => {
     setQuery(value);
     setFilters((f) => ({ ...f, query: value }));
+    followTail.current = false;
     setSelectedIndex(0);
   };
 
@@ -266,6 +289,9 @@ export function App({
         highVolume={highVolume}
         tracker={tracker}
       />
+      {overlay !== 'none' && (
+        <Backdrop width={dimensions.width} height={dimensions.height} backgroundColor={theme.sidebar.bg} />
+      )}
       {overlay === 'search' && (
         <SearchOverlay query={query} onChange={handleSearchChange} matchCount={matchCount} />
       )}
