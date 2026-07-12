@@ -9,4 +9,4 @@ dist/
 coverage/
 *.tgz
 
-.playwright-mcp/
+.playwright-mcp
