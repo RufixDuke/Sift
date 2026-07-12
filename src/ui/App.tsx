@@ -288,6 +288,16 @@ export function App({
         highVolume={highVolume}
         tracker={tracker}
       />
+      {overlay !== 'none' && (
+        <Box
+          position="absolute"
+          top={0}
+          left={0}
+          width={dimensions.width}
+          height={dimensions.height}
+          backgroundColor={theme.sidebar.bg}
+        />
+      )}
       {overlay === 'search' && (
         <SearchOverlay query={query} onChange={handleSearchChange} matchCount={matchCount} />
       )}
