@@ -56,7 +56,7 @@ function detectFromPackageJson(
 
     services.push({
       name,
-      command: command as string,
+      command: `npm run ${script}`,
       cwd: dir,
       color,
       type: match.type,
