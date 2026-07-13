@@ -1,4 +1,4 @@
-import type { ParsedLogEntry, LogLevel } from '../types/index.js';
+import type { ParsedLogEntry } from '../types/index.js';
 import { extractHttpMetric } from '../utils/http.js';
 
 export type ServiceHealth = 'healthy' | 'degraded' | 'unhealthy';
@@ -95,7 +95,11 @@ export class MetricsTracker {
     return Array.from(this.bucketsByService.keys());
   }
 
-  private computeHealth(errorRate: number, requests: number, serviceStatus?: string): ServiceHealth {
+  private computeHealth(
+    errorRate: number,
+    requests: number,
+    serviceStatus?: string,
+  ): ServiceHealth {
     if (serviceStatus === 'crashed') return 'unhealthy';
     if (requests === 0) return 'healthy';
     if (errorRate >= 0.1) return 'unhealthy';

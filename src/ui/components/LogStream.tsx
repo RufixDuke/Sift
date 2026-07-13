@@ -61,12 +61,14 @@ export function LogStream({
 
         const messageChunks = wrapLines
           ? chunkText(firstLine, Math.max(1, width - left.length))
-          : [(() => {
-              const available = Math.max(0, width - left.length - continuationSuffix.length);
-              return firstLine.length > available
-                ? firstLine.slice(0, Math.max(0, available - 1)) + '…'
-                : firstLine;
-            })()];
+          : [
+              (() => {
+                const available = Math.max(0, width - left.length - continuationSuffix.length);
+                return firstLine.length > available
+                  ? firstLine.slice(0, Math.max(0, available - 1)) + '…'
+                  : firstLine;
+              })(),
+            ];
 
         const renderRow = (key: string, content: string, isFirst: boolean) => {
           const raw = isFirst ? `${left}${content}` : `${indent}${content}`;
@@ -79,7 +81,11 @@ export function LogStream({
             );
           }
           return (
-            <Text key={key} color={isFirst ? levelStyle.fg : theme.muted.fg} bold={isFirst && levelStyle.bold}>
+            <Text
+              key={key}
+              color={isFirst ? levelStyle.fg : theme.muted.fg}
+              bold={isFirst && levelStyle.bold}
+            >
               {isFirst ? (
                 <>
                   {timestampPart}
@@ -106,12 +112,16 @@ export function LogStream({
                   .split('\n')
                   .slice(1)
                   .map((line, lineIdx) => {
-                    const chunks = wrapLines ? chunkText(line, Math.max(1, width - left.length)) : [line.slice(0, width - left.length - 3)];
+                    const chunks = wrapLines
+                      ? chunkText(line, Math.max(1, width - left.length))
+                      : [line.slice(0, width - left.length - 3)];
                     return chunks.map((chunk, chunkIdx) => (
                       <React.Fragment key={`${lineIdx}-${chunkIdx}`}>
-                        {isSelected
-                          ? renderRow(`${lineIdx}-${chunkIdx}`, chunk, false)
-                          : <Text color={theme.muted.fg}>{chunk}</Text>}
+                        {isSelected ? (
+                          renderRow(`${lineIdx}-${chunkIdx}`, chunk, false)
+                        ) : (
+                          <Text color={theme.muted.fg}>{chunk}</Text>
+                        )}
                       </React.Fragment>
                     ));
                   })}

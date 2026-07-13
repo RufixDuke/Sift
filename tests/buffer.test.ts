@@ -1,4 +1,4 @@
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect } from 'vitest';
 import { LogBuffer } from '../src/core/buffer.js';
 import type { ParsedLogEntry } from '../src/types/index.js';
 

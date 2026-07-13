@@ -5,7 +5,15 @@ import { SERVICE_PATTERNS } from '../../types/index.js';
 import { safeRead, hasAncestorFile } from './utils.js';
 import type { RawService } from './types.js';
 
-const SCRIPT_CANDIDATES = ['server.js', 'index.js', 'app.js', 'main.js', 'server.mjs', 'index.mjs', 'app.mjs'];
+const SCRIPT_CANDIDATES = [
+  'server.js',
+  'index.js',
+  'app.js',
+  'main.js',
+  'server.mjs',
+  'index.mjs',
+  'app.mjs',
+];
 
 function findPattern(script: string): ServicePattern | undefined {
   return SERVICE_PATTERNS.find((pattern) => {
@@ -46,7 +54,7 @@ export function detectNodeServices(dir: string, packageJsonPathOverride?: string
 
   const services: RawService[] = [];
   const scripts = pkg.scripts || {};
-  for (const [script, command] of Object.entries(scripts)) {
+  for (const script of Object.keys(scripts)) {
     const match = findPattern(script);
     if (!match) continue;
 

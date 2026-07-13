@@ -22,7 +22,8 @@ export function detectProcfileServices(dir: string): RawService[] {
     if (!match) continue;
     const [, name, command] = match;
     if (name === 'release') continue;
-    services.push({ name, command: command.trim(), type: typeForProcess(name) });
+    const type = typeForProcess(name);
+    services.push({ name, command: command.trim(), type, guessed: type === 'worker' });
   }
 
   return services;

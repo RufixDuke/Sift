@@ -57,9 +57,9 @@ function platformBuildToolsMessage(): string {
   return 'Install a C++ compiler, Python, and Node.js headers for your platform';
 }
 
-function loadBetterSqlite(): typeof import('better-sqlite3').default {
+function loadBetterSqlite(): typeof import('better-sqlite3') {
   try {
-    return require('better-sqlite3') as typeof import('better-sqlite3').default;
+    return require('better-sqlite3') as typeof import('better-sqlite3');
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
     throw new Error(
@@ -182,7 +182,8 @@ export class Persistence {
   }
 
   flush(): void {
-    if (this.pending.length === 0 || this.sessionId === null || !this.insertStmt || !this.available) return;
+    if (this.pending.length === 0 || this.sessionId === null || !this.insertStmt || !this.available)
+      return;
 
     const db = this.loadDb();
     const sessionId = this.sessionId;
@@ -204,9 +205,11 @@ export class Persistence {
           entry.metadata ? JSON.stringify(entry.metadata) : null,
         );
       }
-      db.prepare(
-        `UPDATE sessions SET log_count = log_count + ?, updated_at = ? WHERE id = ?`,
-      ).run(batch.length, Date.now(), sessionId);
+      db.prepare(`UPDATE sessions SET log_count = log_count + ?, updated_at = ? WHERE id = ?`).run(
+        batch.length,
+        Date.now(),
+        sessionId,
+      );
     })();
   }
 
@@ -373,7 +376,10 @@ export class Persistence {
     });
   }
 
-  summarizeSession(sessionId: number): { levelCounts: Record<string, number>; serviceCounts: Record<string, number> } {
+  summarizeSession(sessionId: number): {
+    levelCounts: Record<string, number>;
+    serviceCounts: Record<string, number>;
+  } {
     const db = this.loadDb();
     const levelRows = db
       .prepare(`SELECT level, COUNT(*) AS count FROM logs WHERE session_id = ? GROUP BY level`)

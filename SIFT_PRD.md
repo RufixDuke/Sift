@@ -31,6 +31,7 @@
 > Sift is the `htop` of local development logging. It aggregates, parses, categorizes, and presents logs from all your running services in a single, beautiful, interactive terminal interface — so you can find what matters without scrolling through five terminal tabs.
 
 **Core Philosophy:**
+
 - **Aggregate** — One pane, all services. No more tab-switching.
 - **Parse** — Understands log levels, timestamps, service names, request IDs automatically.
 - **Correlate** — Traces a single request across multiple services.
@@ -44,7 +45,9 @@
 ## 2. The Problem in Depth
 
 ### Scenario 1: The Multi-Service Dev Stack
+
 You are running:
+
 ```
 Terminal 1: npx expo start               (Metro bundler)
 Terminal 2: npm run dev                   (Next.js frontend)
@@ -52,29 +55,33 @@ Terminal 3: npm run server                (Express API)
 Terminal 4: docker logs postgres-db -f    (Database)
 Terminal 5: stripe listen --forward-to... (Webhook listener)
 ```
+
 An error happens. You see a flicker of red in Terminal 3, but by the time you switch, it's scrolled away. You don't know which service caused it, or if it's related to the warning you saw in Terminal 1 thirty seconds ago.
 
 ### Scenario 2: The CI Log Dump
+
 Your GitHub Actions workflow fails. The logs are a 4MB text file. You `grep` for "error" and get 200 matches, most of them from `node_modules`. The actual error is a `warning` from your own code that cascaded into a failure three steps later.
 
 ### Scenario 3: The Request Trace
+
 A user reports: "Login is slow." You need to see:
+
 1. Frontend request timestamp
 2. API gateway log
 3. Auth service log
 4. Database query log
-These are in four different places. Correlating them manually is nearly impossible.
+   These are in four different places. Correlating them manually is nearly impossible.
 
 ### Existing Tools and Why They Fall Short
 
-| Tool | What It Does | The Gap |
-|------|-------------|---------|
-| `concurrently` | Runs multiple `npm` scripts, prefixes output | No parsing, no filtering, no UI. Raw interleaved text. |
-| `pm2 logs` | Streams PM2-managed process logs | Requires PM2 adoption. No cross-service correlation. |
-| `docker compose logs` | Aggregates container logs | Docker-only. No filtering UI. Raw color-coded text. |
-| `tail -f` | Follows a single file | One file only. No aggregation. |
-| `lnav` | Log file navigator | File-based, not process-based. Steep learning curve. |
-| Grafana/Loki | Cloud log aggregation | Overkill for local dev. Requires setup. Not real-time for local. |
+| Tool                  | What It Does                                 | The Gap                                                          |
+| --------------------- | -------------------------------------------- | ---------------------------------------------------------------- |
+| `concurrently`        | Runs multiple `npm` scripts, prefixes output | No parsing, no filtering, no UI. Raw interleaved text.           |
+| `pm2 logs`            | Streams PM2-managed process logs             | Requires PM2 adoption. No cross-service correlation.             |
+| `docker compose logs` | Aggregates container logs                    | Docker-only. No filtering UI. Raw color-coded text.              |
+| `tail -f`             | Follows a single file                        | One file only. No aggregation.                                   |
+| `lnav`                | Log file navigator                           | File-based, not process-based. Steep learning curve.             |
+| Grafana/Loki          | Cloud log aggregation                        | Overkill for local dev. Requires setup. Not real-time for local. |
 
 **The gap:** No tool provides a real-time, interactive, aggregated log viewer specifically designed for the multi-service local development workflow.
 
@@ -85,6 +92,7 @@ These are in four different places. Correlating them manually is nearly impossib
 **Primary:** Full-stack and mobile developers running 3+ services locally.
 
 **Profile (like you):**
+
 - Runs a mobile app (Expo/React Native), a web frontend, and a backend API simultaneously
 - Uses `package.json` scripts to start services (`npm run dev`, `npx expo start`, etc.)
 - Has tried `concurrently` but found the output unreadable
@@ -92,12 +100,14 @@ These are in four different places. Correlating them manually is nearly impossib
 - Works on a team where understanding the full request flow matters
 
 **Secondary:**
+
 - DevOps engineers testing multi-service setups locally
 - Backend developers debugging microservices
 - QA engineers reproducing issues with full stack traces
 
 **Adoption Challenge:**
 `concurrently` is already in 4M+ projects and developers' muscle memory. The hardest part of a tool like Sift isn't building it — it's getting someone to change a working habit. Sift addresses this by:
+
 - Pipe mode (`docker compose logs -f | sift`) — works with existing setups, zero config change
 - Drop-in replacement for `concurrently` with `sift run` — same script-based approach, better output
 - Immediate visible value: one glance shows errors across all services, no tab-switching
@@ -110,16 +120,17 @@ These are in four different places. Correlating them manually is nearly impossib
 
 Two tools overlap with parts of Sift's surface area:
 
-| Tool | What It Does | Where Sift Differs |
-|------|-------------|-------------------|
-| **mprocs** | TUI that runs multiple commands in separate named panels, with per-process scrollback, start/stop/restart, and YAML config. | mprocs gives each process its own panel. Sift merges all output into a single, parsed, level-tagged, filterable stream. |
-| **process-compose** | Process runner with dependency graph, `process_log_ready` condition (waits for a log line), interactive/TTY support, health checks. | process-compose solves *running* services. Sift solves *reading across* them as one intelligent, parsed stream. |
+| Tool                | What It Does                                                                                                                        | Where Sift Differs                                                                                                      |
+| ------------------- | ----------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------- |
+| **mprocs**          | TUI that runs multiple commands in separate named panels, with per-process scrollback, start/stop/restart, and YAML config.         | mprocs gives each process its own panel. Sift merges all output into a single, parsed, level-tagged, filterable stream. |
+| **process-compose** | Process runner with dependency graph, `process_log_ready` condition (waits for a log line), interactive/TTY support, health checks. | process-compose solves _running_ services. Sift solves _reading across_ them as one intelligent, parsed stream.         |
 
 ### Sift's Genuine Differentiation
 
-Neither mprocs nor process-compose addresses the core problem: **understanding what happened across all your services as one timeline**. They are process *runners* with log *display*. Sift is a log *processor* with process *management*.
+Neither mprocs nor process-compose addresses the core problem: **understanding what happened across all your services as one timeline**. They are process _runners_ with log _display_. Sift is a log _processor_ with process _management_.
 
 The specific gaps Sift fills:
+
 - **Unified parsed stream** — One scrolling view with log levels, timestamps, and service tags, not N separate panels
 - **Intelligent parsing** — Auto-detects log levels, timestamps, request IDs across different frameworks
 - **Search and filter** — Filter by level ("show me only errors"), by service, or free-text search across all services
@@ -128,12 +139,14 @@ The specific gaps Sift fills:
 - **Pause without loss** — Spacebar pauses display; logs keep buffering in the background
 
 ### Indirect:
+
 - **concurrently** — Most common alternative (4M+ projects). Runs scripts, prefixes output. No parsing, no UI, interleaved raw text. Sift's primary adoption target.
 - **pm2 logs** — Requires PM2 adoption. No cross-service correlation.
 - **docker compose logs** — Docker-only. Raw interleaved text. No filtering UI.
 - **lnav** — File-oriented, not process-oriented. Complex keybindings.
 
 ### Why Sift Wins:
+
 - Zero config for common setups (auto-detects from `package.json`)
 - Beautiful terminal UI (not raw text)
 - Intelligent parsing (understands log levels, not just text)
@@ -145,22 +158,22 @@ The specific gaps Sift fills:
 
 ## 5. Tech Stack
 
-| Layer | Technology | Rationale |
-|-------|-----------|-----------|
-| **Language** | TypeScript | Type safety, familiar ecosystem |
-| **CLI Framework** | `commander` | Argument parsing, subcommands |
-| **Terminal UI** | `ink` (React for terminals) | You know React. Rich component ecosystem. |
-| **React** | `react` | Peer dependency of `ink` |
-| **Ink Components** | `ink-text-input`, `ink-select-input`, `ink-spinner` | Common UI patterns |
-| **Process Management** | `node:child_process` | Spawn, kill, stream processes |
-| **Stream Processing** | `node:readline` | Line-by-line processing of process stdout/stderr |
-| **Log Parsing** | Custom + regex | Framework-specific log format detection |
-| **Config** | `conf` | Cross-platform config storage |
-| **ANSI Handling** | `strip-ansi`, `ansi-regex` | Preserve or strip color codes from child processes |
-| **File Watching** | `node:fs` `watch` | Watch log files in file-follow mode |
-| **Build** | `tsup` | Fast ESM bundling (all deps are ESM-only) |
-| **Test** | `vitest` | Fast, native TypeScript support |
-| **Distribution** | `npm` | Global install: `npm i -g sift-logs` |
+| Layer                  | Technology                                          | Rationale                                          |
+| ---------------------- | --------------------------------------------------- | -------------------------------------------------- |
+| **Language**           | TypeScript                                          | Type safety, familiar ecosystem                    |
+| **CLI Framework**      | `commander`                                         | Argument parsing, subcommands                      |
+| **Terminal UI**        | `ink` (React for terminals)                         | You know React. Rich component ecosystem.          |
+| **React**              | `react`                                             | Peer dependency of `ink`                           |
+| **Ink Components**     | `ink-text-input`, `ink-select-input`, `ink-spinner` | Common UI patterns                                 |
+| **Process Management** | `node:child_process`                                | Spawn, kill, stream processes                      |
+| **Stream Processing**  | `node:readline`                                     | Line-by-line processing of process stdout/stderr   |
+| **Log Parsing**        | Custom + regex                                      | Framework-specific log format detection            |
+| **Config**             | `conf`                                              | Cross-platform config storage                      |
+| **ANSI Handling**      | `strip-ansi`, `ansi-regex`                          | Preserve or strip color codes from child processes |
+| **File Watching**      | `node:fs` `watch`                                   | Watch log files in file-follow mode                |
+| **Build**              | `tsup`                                              | Fast ESM bundling (all deps are ESM-only)          |
+| **Test**               | `vitest`                                            | Fast, native TypeScript support                    |
+| **Distribution**       | `npm`                                               | Global install: `npm i -g sift-logs`               |
 
 ---
 
@@ -277,28 +290,30 @@ User Input (keyboard) ──> Filter / Search / Pause / Scroll
 Sift reads your `package.json` and automatically detects runnable services:
 
 **Detection rules:**
+
 ```javascript
 // Standard scripts that indicate services:
 const SERVICE_PATTERNS = [
-  { script: 'dev',        name: 'web',     type: 'server' },
-  { script: 'start',      name: 'server',  type: 'server' },
-  { script: 'server',     name: 'api',     type: 'server' },
-  { script: 'api',        name: 'api',     type: 'server' },
-  { script: 'web',        name: 'web',     type: 'client' },
-  { script: 'app',        name: 'app',     type: 'client' },
-  { script: 'expo',       name: 'mobile',  type: 'mobile' },
-  { script: 'android',    name: 'android', type: 'mobile' },
-  { script: 'ios',        name: 'ios',     type: 'mobile' },
-  { script: 'metro',      name: 'metro',   type: 'bundler' },
-  { script: 'db',         name: 'db',      type: 'database' },
-  { script: 'postgres',   name: 'db',      type: 'database' },
-  { script: 'redis',      name: 'redis',   type: 'cache' },
-  { script: 'stripe',     name: 'stripe',  type: 'webhook' },
-  { script: 'tunnel',     name: 'tunnel',  type: 'network' },
+  { script: 'dev', name: 'web', type: 'server' },
+  { script: 'start', name: 'server', type: 'server' },
+  { script: 'server', name: 'api', type: 'server' },
+  { script: 'api', name: 'api', type: 'server' },
+  { script: 'web', name: 'web', type: 'client' },
+  { script: 'app', name: 'app', type: 'client' },
+  { script: 'expo', name: 'mobile', type: 'mobile' },
+  { script: 'android', name: 'android', type: 'mobile' },
+  { script: 'ios', name: 'ios', type: 'mobile' },
+  { script: 'metro', name: 'metro', type: 'bundler' },
+  { script: 'db', name: 'db', type: 'database' },
+  { script: 'postgres', name: 'db', type: 'database' },
+  { script: 'redis', name: 'redis', type: 'cache' },
+  { script: 'stripe', name: 'stripe', type: 'webhook' },
+  { script: 'tunnel', name: 'tunnel', type: 'network' },
 ];
 ```
 
 **Example `package.json` and what Sift detects:**
+
 ```json
 {
   "scripts": {
@@ -355,41 +370,44 @@ Every log line goes through the parser pipeline:
    - Generic → best-effort regex probing
 
 4. **Timestamp Extraction** (per format):
-   | Format | Example |
-   |--------|---------|
-   | ISO 8601 | `2026-01-15T09:32:15.123Z` |
-   | Simple time | `09:32:15` |
-   | Time with ms | `09:32:15.123` |
-   | Bracketed | `[09:32:15]` |
-   | Prefix | `2026-01-15 09:32:15` |
-   | Unix ms | `1705312335123` |
-   | Relative | `+45ms` |
+
+   | Format       | Example                    |
+   | ------------ | -------------------------- |
+   | ISO 8601     | `2026-01-15T09:32:15.123Z` |
+   | Simple time  | `09:32:15`                 |
+   | Time with ms | `09:32:15.123`             |
+   | Bracketed    | `[09:32:15]`               |
+   | Prefix       | `2026-01-15 09:32:15`      |
+   | Unix ms      | `1705312335123`            |
+   | Relative     | `+45ms`                    |
 
 5. **Log Level Detection:**
-   | Level | Patterns |
-   |-------|----------|
+
+   | Level | Patterns                                                                  |
+   | ----- | ------------------------------------------------------------------------- |
    | ERROR | `ERROR`, `ERR`, `FATAL`, `CRITICAL`, `✗`, `[error]`, `level:50`, HTTP 5xx |
-   | WARN | `WARN`, `WARNING`, `⚠`, `[warn]`, `level:40`, HTTP 4xx |
-   | INFO | `INFO`, `LOG`, `ℹ`, `✓`, `[info]`, `level:30`, HTTP 2xx/3xx |
-   | DEBUG | `DEBUG`, `DBG`, `[debug]`, `level:20`, `verbose` |
-   | TRACE | `TRACE`, `[trace]`, `level:10` |
+   | WARN  | `WARN`, `WARNING`, `⚠`, `[warn]`, `level:40`, HTTP 4xx                    |
+   | INFO  | `INFO`, `LOG`, `ℹ`, `✓`, `[info]`, `level:30`, HTTP 2xx/3xx               |
+   | DEBUG | `DEBUG`, `DBG`, `[debug]`, `level:20`, `verbose`                          |
+   | TRACE | `TRACE`, `[trace]`, `level:10`                                            |
 
 6. **Request ID Extraction** — From known patterns (see types).
 
 **Parsed Log Entry Type:**
+
 ```typescript
 interface ParsedLogEntry {
-  id: number;                    // Monotonic sequence number
-  raw: string;                   // Original line (with ANSI preserved)
-  stripped: string;              // Line with ANSI stripped
-  service: string;               // Source service name
-  stream: 'stdout' | 'stderr';   // Which stream
-  timestamp?: Date;              // Parsed timestamp (or undefined)
-  level: LogLevel;               // error | warn | info | debug | trace | unknown
-  message: string;               // Clean message text
-  requestId?: string;            // Correlation ID if found
+  id: number; // Monotonic sequence number
+  raw: string; // Original line (with ANSI preserved)
+  stripped: string; // Line with ANSI stripped
+  service: string; // Source service name
+  stream: 'stdout' | 'stderr'; // Which stream
+  timestamp?: Date; // Parsed timestamp (or undefined)
+  level: LogLevel; // error | warn | info | debug | trace | unknown
+  message: string; // Clean message text
+  requestId?: string; // Correlation ID if found
   metadata?: Record<string, any>; // Extra fields from JSON logs
-  display: DisplayEntry;         // Pre-formatted display data
+  display: DisplayEntry; // Pre-formatted display data
 }
 ```
 
@@ -407,6 +425,7 @@ When a request flows through multiple services, Sift links them:
 ```
 
 **How to view correlated logs:**
+
 - Press `Enter` on a log line with a request ID → shows only that request's trace
 - Press `Backspace` → return to full view
 - Request traces are shown with a subtle left-border in the service's color
@@ -451,6 +470,7 @@ class LogBuffer {
 Note: The buffer stores entries in **arrival order**, not strict timestamp-sorted order. A bounded reorder window (default 500ms) handles minor cross-service clock skew. Full timestamp sorting is deferred to display-time for the visible slice only.
 
 **Key design decision:** Arrival-ordered storage with bounded reorder window.
+
 - Arrival order is O(1) append — fast, correct for the common case
 - The 500ms reorder window handles minor clock skew between services
 - Cross-process timestamp sorting is unreliable (clock skew, missing timestamps, different formats)
@@ -461,6 +481,7 @@ When the buffer is full, oldest entries are overwritten. This prevents memory le
 ### 7.5 Pause / Resume
 
 Press `Space` to pause the stream. While paused:
+
 - New logs are buffered (not lost)
 - A "Paused — 23 new logs" indicator appears
 - You can scroll, search, and filter existing logs freely
@@ -469,6 +490,7 @@ Press `Space` to pause the stream. While paused:
 ### 7.6 Search
 
 Press `/` to open search overlay:
+
 - Type query, results highlighted in real-time
 - `n` / `N` to navigate between matches
 - Search across: raw text, service name, request ID
@@ -566,6 +588,7 @@ concurrently "npm:dev" "npm:server" 2>&1 | sift --file -
 This sidesteps process spawning entirely — Sift focuses on what it does best: parsing and displaying.
 
 **Why pipe mode is the honest MVP:**
+
 - Works with any existing setup (no need to change how you start services)
 - No process lifecycle management (no orphan processes, no restart logic)
 - Works on every platform (macOS, Linux, Windows with WSL)
@@ -585,6 +608,7 @@ sift 1.0.0
 ### Parser Registry
 
 Each parser handles one **format shape**, not one language. The registry auto-selects based on:
+
 1. Explicit assignment in config (`parser: "json-line"`)
 2. Service name heuristics (`docker` → docker parser)
 3. Content-based detection (per-line adaptive, not "first 10 lines")
@@ -594,6 +618,7 @@ Each parser handles one **format shape**, not one language. The registry auto-se
 Pino, Winston, and Bunyan are all "JavaScript" but have completely different shapes. Meanwhile Pino JSON, Go's Zap JSON, and Python structlog JSON are nearly identical across languages. Organizing by format shape collapses parser sprawl.
 
 **Format detection strategy (per-line, adaptive):**
+
 1. Try JSON-line first (structured — cheapest to identify)
 2. Try known prefix patterns (bracketed, logfmt, access-log)
 3. Fall back to generic regex probing
@@ -604,6 +629,7 @@ Pino, Winston, and Bunyan are all "JavaScript" but have completely different sha
 ### JSON-Line Parser
 
 Handles all structured JSON logs regardless of language:
+
 - **Pino** (JS): `{ "level": 30, "msg": "request completed", "responseTime": 45 }`
 - **Winston** (JS): `{ "level": "info", "message": "Server started", "timestamp": "2026-01-15T09:32:15.123Z" }`
 - **Bunyan** (JS): `{ "name": "myapp", "level": 30, "msg": "hello" }`
@@ -615,6 +641,7 @@ Extracts: `level`, `message`/`msg`, `timestamp`/`time`/`ts`, `service`, `request
 ### Bracketed Parser
 
 Handles `[LEVEL]` and `[timestamp]` formats:
+
 - **env_logger** (Rust): `[2026-01-15T09:32:15Z INFO mycrate] Server started`
 - **Metro** (React Native): ` BUNDLE  ./index.js ▓▓▓▓▓▓▓▓░░░░ 67% (120/180)`
 - **Console**: `[09:32:15] GET /api/users 200 45ms`
@@ -623,6 +650,7 @@ Handles `[LEVEL]` and `[timestamp]` formats:
 ### Logfmt Parser
 
 Handles `key=value` pairs:
+
 - **Logrus** (Go): `time="2026-01-15T09:32:15Z" level=info msg="request"`
 - **Heroku**: `app=web status=200 elapsed=45ms`
 - **systemd**: `PRIORITY=6 SYSLOG_IDENTIFIER=myapp MESSAGE=Server started`
@@ -630,6 +658,7 @@ Handles `key=value` pairs:
 ### Access-Log Parser
 
 Handles HTTP request logs:
+
 - **morgan** (Express): `::1 - - [15/Jan/2026:09:32:15 +0000] "GET /api/users HTTP/1.1" 200 45ms`
 - **Apache CLF**: `127.0.0.1 - - [15/Jan/2026:09:32:15 +0000] "GET / HTTP/1.1" 200 1234`
 - **Nginx**: `127.0.0.1 - - [15/Jan/2026:09:32:15 +0000] "GET /api HTTP/1.1" 200 45 "-" "curl/7.68.0"`
@@ -637,6 +666,7 @@ Handles HTTP request logs:
 - **Django**: `[15/Jan/2026 09:32:15] "GET /api/users HTTP/1.1" 200 45`
 
 **HTTP status code → level mapping:**
+
 - 5xx → error
 - 4xx → warn
 - 3xx → info
@@ -645,6 +675,7 @@ Handles HTTP request logs:
 ### Prefixed Parser
 
 Handles `LEVEL: message` and `TIMESTAMP LEVEL message` formats:
+
 - **Next.js**: ` GET /dashboard 200 in 45ms`
 - **Vite**: `9:32:15 AM [vite] hmr update /src/App.tsx`
 - **Python standard**: `2026-01-15 09:32:15,123 - myapp - INFO - Server started`
@@ -653,6 +684,7 @@ Handles `LEVEL: message` and `TIMESTAMP LEVEL message` formats:
 ### Docker Parser
 
 Handles:
+
 - **Standard Docker logs**: `web_1  | [09:32:15] GET /users 200`
 - **Docker Compose**: `api-web-1   | {"level":"info","message":"request"}`
 - **Container ID prefix**: `a1b2c3d4e5f6 [INFO] Server started`
@@ -660,6 +692,7 @@ Handles:
 ### Generic Parser (Fallback)
 
 When no specific parser matches:
+
 1. Look for timestamp at start of line
 2. Look for level keywords anywhere in the line
 3. Treat the rest as the message
@@ -715,54 +748,54 @@ export const theme = {
   // Log levels — shape + color, not color alone
   // Each level has a unique prefix symbol for non-color identification
   levels: {
-    error:   { fg: '#F44336', bg: '#3A1A1A', bold: true, symbol: '✗' },
-    warn:    { fg: '#FF9800', bg: '#3A2A0A', bold: false, symbol: '⚠' },
-    info:    { fg: '#E0E0E0', bg: undefined, bold: false, symbol: 'ℹ' },
-    debug:   { fg: '#90A4AE', bg: undefined, bold: false, symbol: '◆' },
-    trace:   { fg: '#78909C', bg: undefined, bold: false, symbol: '···' },
+    error: { fg: '#F44336', bg: '#3A1A1A', bold: true, symbol: '✗' },
+    warn: { fg: '#FF9800', bg: '#3A2A0A', bold: false, symbol: '⚠' },
+    info: { fg: '#E0E0E0', bg: undefined, bold: false, symbol: 'ℹ' },
+    debug: { fg: '#90A4AE', bg: undefined, bold: false, symbol: '◆' },
+    trace: { fg: '#78909C', bg: undefined, bold: false, symbol: '···' },
     unknown: { fg: '#B0BEC5', bg: undefined, bold: false, symbol: '?' },
   },
 
   // UI chrome
-  sidebar:      { fg: '#E0E0E0', bg: '#263238' },
-  statusBar:    { fg: '#FFFFFF', bg: '#37474F' },
-  statusError:  { fg: '#FFFFFF', bg: '#D32F2F' },
-  statusWarn:   { fg: '#000000', bg: '#FBC02D' },
-  highlight:    { fg: '#212121', bg: '#FFEB3B' },
-  selection:    { fg: '#FFFFFF', bg: '#1565C0' },
-  border:       { fg: '#455A64' },
-  muted:        { fg: '#78909C' },
+  sidebar: { fg: '#E0E0E0', bg: '#263238' },
+  statusBar: { fg: '#FFFFFF', bg: '#37474F' },
+  statusError: { fg: '#FFFFFF', bg: '#D32F2F' },
+  statusWarn: { fg: '#000000', bg: '#FBC02D' },
+  highlight: { fg: '#212121', bg: '#FFEB3B' },
+  selection: { fg: '#FFFFFF', bg: '#1565C0' },
+  border: { fg: '#455A64' },
+  muted: { fg: '#78909C' },
 };
 ```
 
 ### Keyboard Shortcuts
 
-| Key | Action |
-|-----|--------|
-| `↑` / `↓` | Scroll through logs (1 line) |
-| `PgUp` / `PgDn` | Scroll (10 lines) |
-| `Home` / `End` | Jump to first / last log |
-| `Space` | Pause / resume stream |
-| `/` | Open search overlay |
-| `n` / `N` | Next / previous search match |
-| `f` | Toggle filter panel |
-| `e` | Filter: show only errors |
-| `w` | Filter: show only warnings |
-| `i` | Filter: show only info |
-| `a` | Filter: show all |
-| `s` + number | Toggle service visibility (s1, s2, etc.) |
-| `Enter` | On log with requestId → show trace view |
-| `Backspace` / `Esc` | Exit trace view / close overlay |
-| `d` | Show detail view for selected log |
-| `c` | Copy selected log to clipboard |
-| `1-9` | Jump to service N in sidebar |
-| `r` | Restart selected service |
-| `k` | Kill selected service |
-| `o` | Open service's cwd in terminal |
-| `l` | Toggle line wrapping |
-| `t` | Toggle timestamps |
-| `h` / `?` | Show help overlay |
-| `q` / `Ctrl+C` | Quit Sift |
+| Key                 | Action                                   |
+| ------------------- | ---------------------------------------- |
+| `↑` / `↓`           | Scroll through logs (1 line)             |
+| `PgUp` / `PgDn`     | Scroll (10 lines)                        |
+| `Home` / `End`      | Jump to first / last log                 |
+| `Space`             | Pause / resume stream                    |
+| `/`                 | Open search overlay                      |
+| `n` / `N`           | Next / previous search match             |
+| `f`                 | Toggle filter panel                      |
+| `e`                 | Filter: show only errors                 |
+| `w`                 | Filter: show only warnings               |
+| `i`                 | Filter: show only info                   |
+| `a`                 | Filter: show all                         |
+| `s` + number        | Toggle service visibility (s1, s2, etc.) |
+| `Enter`             | On log with requestId → show trace view  |
+| `Backspace` / `Esc` | Exit trace view / close overlay          |
+| `d`                 | Show detail view for selected log        |
+| `c`                 | Copy selected log to clipboard           |
+| `1-9`               | Jump to service N in sidebar             |
+| `r`                 | Restart selected service                 |
+| `k`                 | Kill selected service                    |
+| `o`                 | Open service's cwd in terminal           |
+| `l`                 | Toggle line wrapping                     |
+| `t`                 | Toggle timestamps                        |
+| `h` / `?`           | Show help overlay                        |
+| `q` / `Ctrl+C`      | Quit Sift                                |
 
 ### Service Sidebar
 
@@ -775,6 +808,7 @@ export const theme = {
 ### Status Bar
 
 Shows (left to right):
+
 1. **Status**: `Running` (green) / `Paused` (yellow) / `N services crashed` (red)
 2. **Filters**: Currently active filters
 3. **Search**: Active search query (if any)
@@ -792,6 +826,7 @@ This section is comprehensive. Every edge case Sift must handle is documented he
 **Problem:** A service outputs thousands of lines per second (e.g., debug mode, request spam). The UI can't render that fast.
 
 **Solution:**
+
 - Implement a **render throttle**: maximum 60 UI updates per second (16ms interval)
 - During high-volume bursts, batch log entries: update the buffer continuously, but only render the latest snapshot
 - Show a brief indicator: `⚡ High volume — 1,247 lines/s`
@@ -810,6 +845,7 @@ Error: Cannot read property 'id' of undefined
 ```
 
 **Solution:**
+
 - Detect continuation lines by:
   1. Lines starting with whitespace + `at ` (stack traces)
   2. Lines that are valid JSON continuation (unclosed `{` or `[`)
@@ -824,6 +860,7 @@ Error: Cannot read property 'id' of undefined
 **Problem:** Child processes output ANSI color codes. Sift must either strip them (for parsing) or preserve them (for display).
 
 **Solution:**
+
 - **Never strip ANSI from the `raw` field** — always preserve the original
 - Strip ANSI only for parsing (using the `stripped` field)
 - For display: if the log has ANSI codes, render them. If not, apply Sift's own coloring based on detected level
@@ -841,6 +878,7 @@ Error: Cannot read property 'id' of undefined
 **Problem:** A service crashes (exits with non-zero code). What should Sift do?
 
 **Solution:**
+
 1. Detect process exit via `child.on('exit')` or `child.on('close')`
 2. Log the exit in Sift's own stream: `✗ api exited with code 1 (after 4m 23s)`
 3. Update service status to `✗ crashed`
@@ -854,6 +892,7 @@ Error: Cannot read property 'id' of undefined
 **Problem:** A developer already has services running (e.g., Docker started separately, PM2, systemd). They want to use Sift without restarting.
 
 **Solution:** Use pipe mode — the most reliable entry point:
+
 ```bash
 docker compose logs -f | sift --file -
 kubectl logs -f deployment/api | sift --file -
@@ -870,6 +909,7 @@ Reading `/proc/<pid>/fd/1` does not passively tee another process's output — t
 **Problem:** A process accidentally writes binary data to stdout (e.g., a corrupted Buffer.toString()). This can break the terminal.
 
 **Solution:**
+
 - Check each chunk for non-printable characters (>10% non-printable bytes)
 - If binary detected: replace the line with `[binary data: 2.4KB] — non-printable output suppressed`
 - Log a warning in Sift's internal stream: `⚠ api output non-printable data (2.4KB), suppressed`
@@ -881,6 +921,7 @@ Reading `/proc/<pid>/fd/1` does not passively tee another process's output — t
 **Problem:** With 5+ services, logs arrive asynchronously and would interleave chaotically.
 
 **Solution:**
+
 - Each service has its own readable stream handler
 - All parsed entries go into a single, timestamp-sorted ring buffer
 - The UI renders from the buffer (which is sorted), not directly from streams
@@ -892,6 +933,7 @@ Reading `/proc/<pid>/fd/1` does not passively tee another process's output — t
 **Problem:** User resizes the terminal window. UI must adapt.
 
 **Solution:**
+
 - Listen for `SIGWINCH` (Unix) or `process.stdout.on('resize')` (Node.js)
 - Recalculate layout dimensions on resize:
   - Terminal width < 80: hide sidebar, full-width log stream
@@ -906,6 +948,7 @@ Reading `/proc/<pid>/fd/1` does not passively tee another process's output — t
 **Problem:** Logs may contain emoji, CJK characters, or other wide Unicode.
 
 **Solution:**
+
 - Use a Unicode-aware string width library (like `string-width`) for correct alignment
 - Emoji take 2 columns — account for this in layout calculations
 - Don't truncate mid-emoji or mid-grapheme-cluster
@@ -916,6 +959,7 @@ Reading `/proc/<pid>/fd/1` does not passively tee another process's output — t
 **Problem:** Some services don't output timestamps (e.g., `echo` in a script, simple Python print).
 
 **Solution:**
+
 - If no timestamp is detected, use the arrival time (when Sift received the line)
 - Display as `[--:--:--]` in a muted color to indicate it's inferred
 - Config option: `injectTimestamps: true` — Sift prepends `[HH:MM:SS]` to lines without timestamps
@@ -925,6 +969,7 @@ Reading `/proc/<pid>/fd/1` does not passively tee another process's output — t
 **Problem:** A service may write errors to stdout and info to stderr (yes, this happens), or vice versa.
 
 **Solution:**
+
 - Read both `stdout` and `stderr` streams for each process
 - Tag each line with its source stream (`stdout` or `stderr`)
 - Default heuristic: stderr lines are treated as one level higher (stdout INFO → stderr WARN)
@@ -936,6 +981,7 @@ Reading `/proc/<pid>/fd/1` does not passively tee another process's output — t
 **Problem:** Sift crashes or is killed with `kill -9`. Child processes keep running as orphans.
 
 **Solution:**
+
 - Use `process.on('exit')` and `process.on('SIGINT')` to kill all children before exiting
 - Use Node.js `child.unref()` carefully — only on services that should outlive Sift
 - On Sift startup, check for previously orphaned processes (match by command pattern) and offer to kill them
@@ -947,6 +993,7 @@ Reading `/proc/<pid>/fd/1` does not passively tee another process's output — t
 **Problem:** A process writes output without a trailing newline (e.g., progress bars, `process.stdout.write`).
 
 **Solution:**
+
 - Buffer incoming chunks until a newline is received
 - For chunks without a newline, append to a pending buffer
 - If the pending buffer exceeds 4096 bytes without a newline, force-flush it as a complete line
@@ -957,6 +1004,7 @@ Reading `/proc/<pid>/fd/1` does not passively tee another process's output — t
 **Problem:** A service starts but produces no output for a long time (e.g., a background worker). User doesn't know if it's running.
 
 **Solution:**
+
 - Show a heartbeat indicator in the sidebar: `◐ starting...` → `● running` → `○ idle` (after 30s of no output)
 - Show last-output time: `● api (idle 2m)`
 - Configurable idle timeout
@@ -966,6 +1014,7 @@ Reading `/proc/<pid>/fd/1` does not passively tee another process's output — t
 **Problem:** A service logs a JavaScript object with circular references. `JSON.stringify` fails.
 
 **Solution:**
+
 - The parser attempts `JSON.parse` on each line
 - If parse fails, treat as plain text (generic parser)
 - If a partial JSON is detected (starts with `{` but never closes), wait for continuation lines
@@ -976,6 +1025,7 @@ Reading `/proc/<pid>/fd/1` does not passively tee another process's output — t
 **Problem:** A single log line is 5,000+ characters (e.g., a massive SQL query, a dumped JSON object).
 
 **Solution:**
+
 - Default: truncate display at terminal width, show `…` at the end
 - Press `l` to toggle line wrapping
 - In detail view (`d`), show the full line with scrolling
@@ -986,6 +1036,7 @@ Reading `/proc/<pid>/fd/1` does not passively tee another process's output — t
 **Problem:** Services that read from stdin (e.g., interactive CLIs, REPLs) will conflict with Sift's keyboard handling.
 
 **Solution:**
+
 - Sift captures all keyboard input by default
 - Press `Shift+Tab` to "focus" a service — keyboard input is then forwarded to that service's stdin
 - A prominent indicator shows which service has focus: `Input focused on: api`
@@ -998,6 +1049,7 @@ Reading `/proc/<pid>/fd/1` does not passively tee another process's output — t
 **Problem:** When using `--file` mode, the log file may be rotated (moved/archived, new file created).
 
 **Solution:**
+
 - Use `fs.watch` on the log file directory
 - If the file is renamed or deleted, attempt to reopen it
 - If a new file with the same name appears, start reading from it
@@ -1008,6 +1060,7 @@ Reading `/proc/<pid>/fd/1` does not passively tee another process's output — t
 **Problem:** A monorepo has multiple `package.json` files, each with a `dev` script. Auto-detection would name them all "web".
 
 **Solution:**
+
 - Use the directory name as a prefix: `web` (from `./frontend/`) and `web-dashboard` (from `./dashboard/`)
 - Config allows explicit naming to disambiguate
 - Detection walks subdirectories for additional `package.json` files (up to 2 levels deep)
@@ -1017,6 +1070,7 @@ Reading `/proc/<pid>/fd/1` does not passively tee another process's output — t
 **Problem:** A service has its own terminal UI (e.g., `vitest --ui`, `htop`, `npm init`).
 
 **Solution:**
+
 - Detect interactive TUIs by checking if the process requests a TTY (`process.stdin.isTTY`)
 - Services requesting a TTY are started in a separate pseudo-terminal (using `node-pty`)
 - Render their output in a dedicated panel (like a terminal within Sift)
@@ -1027,11 +1081,13 @@ Reading `/proc/<pid>/fd/1` does not passively tee another process's output — t
 **Problem:** Logs routinely carry JWTs, API keys, connection strings, credit card numbers, and personally identifiable information.
 
 **MVP handling:**
+
 - Sift stores whatever it receives in the ring buffer (in memory only, no disk persistence in MVP)
 - Buffer is overwritten on rotation — secrets don't accumulate indefinitely
 - No log sharing/export in MVP (the hardest part of anonymization)
 
 **Post-MVP:**
+
 - Optional secret redaction via configurable regex patterns
 - PII masking for shared log exports
 - These features require careful design; they are explicitly not in MVP
@@ -1043,6 +1099,7 @@ Reading `/proc/<pid>/fd/1` does not passively tee another process's output — t
 ### Config File Resolution Order
 
 Sift looks for config in this order (first found wins):
+
 1. `--config <path>` (CLI flag)
 2. `./sift.config.json` (current directory)
 3. `./.siftrc` (dotfile alternative)
@@ -1054,23 +1111,23 @@ Sift looks for config in this order (first found wins):
 
 ```typescript
 interface ServiceConfig {
-  name: string;                    // Unique identifier
-  command: string;                 // Shell command to run
-  cwd?: string;                    // Working directory (default: .)
-  env?: Record<string, string>;    // Extra environment variables
-  color?: string;                  // Override auto-assigned color
-  parser?: string;                 // Parser to use (auto-detected if omitted)
-  dependsOn?: string[];            // Start after these services are ready
+  name: string; // Unique identifier
+  command: string; // Shell command to run
+  cwd?: string; // Working directory (default: .)
+  env?: Record<string, string>; // Extra environment variables
+  color?: string; // Override auto-assigned color
+  parser?: string; // Parser to use (auto-detected if omitted)
+  dependsOn?: string[]; // Start after these services are ready
   // Validation: Sift detects dependency cycles on startup and exits with an error.
   // Example of a cycle: A depends on B, B depends on C, C depends on A.
-  readyPattern?: string;           // Regex to detect "service is ready"
-  readyTimeout?: number;           // Seconds to wait for readyPattern (default: 30)
-  restart?: 'never' | 'on-failure' | 'always';  // Auto-restart policy
-  maxRestarts?: number;            // Max restarts in 30s before giving up
-  tty?: boolean;                   // Allocate pseudo-terminal
-  interactive?: boolean;           // Reads from stdin
-  suppress?: boolean;              // Hide from UI sidebar (logs still go to ring buffer)
-  prefix?: string;                 // Custom log prefix (default: service name)
+  readyPattern?: string; // Regex to detect "service is ready"
+  readyTimeout?: number; // Seconds to wait for readyPattern (default: 30)
+  restart?: 'never' | 'on-failure' | 'always'; // Auto-restart policy
+  maxRestarts?: number; // Max restarts in 30s before giving up
+  tty?: boolean; // Allocate pseudo-terminal
+  interactive?: boolean; // Reads from stdin
+  suppress?: boolean; // Hide from UI sidebar (logs still go to ring buffer)
+  prefix?: string; // Custom log prefix (default: service name)
 }
 
 interface SiftConfig {
@@ -1078,17 +1135,17 @@ interface SiftConfig {
   version: number;
   services: ServiceConfig[];
   settings?: {
-    bufferSize?: number;           // Default: 10000
-    showTimestamp?: boolean;       // Default: true
-    showServiceName?: boolean;     // Default: true
+    bufferSize?: number; // Default: 10000
+    showTimestamp?: boolean; // Default: true
+    showServiceName?: boolean; // Default: true
     showStreamIndicator?: boolean; // Default: false
-    stripAnsi?: boolean;           // Default: false
-    injectTimestamps?: boolean;    // Default: false
-    autoScroll?: boolean;          // Default: true
-    autoRestart?: boolean;         // Default: false
-    theme?: 'dark' | 'light';      // Default: dark
-    sidebarWidth?: number;         // Default: 25 (% of terminal)
-    dateFormat?: string;           // Default: 'HH:MM:SS'
+    stripAnsi?: boolean; // Default: false
+    injectTimestamps?: boolean; // Default: false
+    autoScroll?: boolean; // Default: true
+    autoRestart?: boolean; // Default: false
+    theme?: 'dark' | 'light'; // Default: dark
+    sidebarWidth?: number; // Default: 25 (% of terminal)
+    dateFormat?: string; // Default: 'HH:MM:SS'
   };
 }
 ```
@@ -1100,7 +1157,12 @@ interface SiftConfig {
   "services": [
     { "name": "db", "command": "docker compose up postgres" },
     { "name": "redis", "command": "redis-server" },
-    { "name": "api", "command": "npm run server", "dependsOn": ["db", "redis"], "readyPattern": "Server listening on port" },
+    {
+      "name": "api",
+      "command": "npm run server",
+      "dependsOn": ["db", "redis"],
+      "readyPattern": "Server listening on port"
+    },
     { "name": "web", "command": "npm run dev", "dependsOn": ["api"] }
   ]
 }
@@ -1114,26 +1176,26 @@ Sift starts services in topological order. `api` waits until `db` and `redis` ha
 
 ### Memory Budget
 
-| Component | Budget | Strategy |
-|-----------|--------|----------|
-| Log buffer | ~20MB (10,000 lines avg) | Ring buffer, overwrites old entries |
-| Parsed entries | 30MB | Object pooling for repeated strings |
-| UI render state | 5MB | Only render visible portion |
-| Process handles | 2MB | Lazy spawn, eager cleanup |
-| **Total** | **~60MB** | Acceptable for a dev tool |
+| Component       | Budget                   | Strategy                            |
+| --------------- | ------------------------ | ----------------------------------- |
+| Log buffer      | ~20MB (10,000 lines avg) | Ring buffer, overwrites old entries |
+| Parsed entries  | 30MB                     | Object pooling for repeated strings |
+| UI render state | 5MB                      | Only render visible portion         |
+| Process handles | 2MB                      | Lazy spawn, eager cleanup           |
+| **Total**       | **~60MB**                | Acceptable for a dev tool           |
 
 **Memory note:** The real memory risk is storing multiple copies of the same text. `ParsedLogEntry` stores both `raw` (with ANSI) and `stripped` (without ANSI), plus a pre-formatted `display` field. That's 2-3 copies per line. The optimization target is deduplicating the message text, not string interning (which only helps for repeated tokens like service/level names).
 
 ### Performance Targets
 
-| Metric | Target |
-|--------|--------|
-| Startup time | < 500ms (all services spawned, UI rendered) |
-| Log ingestion | > 5,000 lines/second (per service) |
-| UI render | Throttled to 16ms max | Batched updates, virtual scrolling |
-| Search | < 100ms for 10,000 lines |
-| Filter toggle | < 50ms |
-| Scroll | Throttled to 16ms max | Virtual scrolling, no jank |
+| Metric        | Target                                      |
+| ------------- | ------------------------------------------- |
+| Startup time  | < 500ms (all services spawned, UI rendered) |
+| Log ingestion | > 5,000 lines/second (per service)          |
+| UI render     | Throttled to 16ms max                       | Batched updates, virtual scrolling |
+| Search        | < 100ms for 10,000 lines                    |
+| Filter toggle | < 50ms                                      |
+| Scroll        | Throttled to 16ms max                       | Virtual scrolling, no jank         |
 
 ### Optimizations
 
@@ -1150,6 +1212,7 @@ Sift starts services in topological order. `api` waits until `db` and `redis` ha
 ### Phase 1: Foundation (Days 1-5)
 
 **Day 1: Project Scaffold**
+
 - [ ] Initialize Node.js + TypeScript project with `"type": "module"`
 - [ ] Install dependencies (commander, ink, ink-text-input, chalk, strip-ansi, conf, vitest, tsup)
 - [ ] Write all TypeScript types
@@ -1157,6 +1220,7 @@ Sift starts services in topological order. `api` waits until `db` and `redis` ha
 - [ ] First commit: `scaffold: ESM project structure`
 
 **Day 2: Core Engine**
+
 - [ ] `detector.ts` — Auto-detect services from `package.json` scripts
 - [ ] `spawner.ts` — Spawn processes, manage stdout/stderr streams
 - [ ] `parser.ts` — Core parsing pipeline (format-first: JSON, bracketed, prefixed)
@@ -1164,6 +1228,7 @@ Sift starts services in topological order. `api` waits until `db` and `redis` ha
 - [ ] Commit: `feat: core engine`
 
 **Day 3: Format Parsers**
+
 - [ ] `json-line.ts` — JSON structured logs
 - [ ] `bracketed.ts` — [LEVEL] message format
 - [ ] `prefixed.ts` — LEVEL: message format
@@ -1173,6 +1238,7 @@ Sift starts services in topological order. `api` waits until `db` and `redis` ha
 - [ ] Commit: `feat: format parsers`
 
 **Day 4-5: Basic UI**
+
 - [ ] `App.tsx` — Root Ink component with layout
 - [ ] `ServiceSidebar.tsx` — Service list with status
 - [ ] `LogStream.tsx` — Virtual scrolling log view
@@ -1183,18 +1249,21 @@ Sift starts services in topological order. `api` waits until `db` and `redis` ha
 ### Phase 2: Interactions (Days 6-10)
 
 **Day 6-7: Search & Filter**
+
 - [ ] Search overlay with real-time highlight
 - [ ] Filter by service (s1, s2, etc.)
 - [ ] Filter by level (e/w/i)
 - [ ] Show all / clear filters
 
 **Day 8-9: Edge Cases**
+
 - [ ] ANSI preservation for display
 - [ ] Multi-line entry detection (stack traces)
 - [ ] Terminal resize handling
 - [ ] High-volume render throttling
 
 **Day 10: Polish**
+
 - [ ] Detail view for stack traces
 - [ ] Service crash detection
 - [ ] Keyboard shortcuts help overlay
@@ -1203,16 +1272,19 @@ Sift starts services in topological order. `api` waits until `db` and `redis` ha
 ### Phase 3: Ship (Days 11-15)
 
 **Day 11-12: Pipe Mode & Config**
+
 - [ ] `sift --file -` pipe mode (primary entry point)
 - [ ] `sift config init` interactive generator
 - [ ] Config validation and schema
 
 **Day 13-14: Testing**
+
 - [ ] Test fixtures for all supported formats
 - [ ] Integration tests against fixtures
 - [ ] Performance tests (high-volume ingestion)
 
 **Day 15: Distribution**
+
 - [ ] README with screenshots
 - [ ] `package.json` with ESM config, bin, keywords
 - [ ] Build and test install
@@ -1223,6 +1295,7 @@ Sift starts services in topological order. `api` waits until `db` and `redis` ha
 **Goal:** Build a public-facing website that explains Sift, showcases its features, and drives adoption — especially among developers currently using `concurrently` or raw `docker compose logs`.
 
 **Day 16: Design & Content**
+
 - [ ] Define site structure: Hero, Features, Demo, Docs, Install, GitHub link
 - [ ] Write marketing copy from the PRD (problem, differentiation, target users)
 - [ ] Create wireframes / design direction (single-page landing, terminal aesthetic)
@@ -1230,12 +1303,14 @@ Sift starts services in topological order. `api` waits until `db` and `redis` ha
 - [ ] Commit: `docs: marketing site content and wireframes`
 
 **Day 17: Site Scaffold**
+
 - [ ] Initialize website project (e.g., `site/` with Next.js or Vite + static export)
 - [ ] Set up Tailwind or equivalent styling that matches Sift's terminal UI palette
 - [ ] Build reusable components: TerminalWindow, FeatureCard, CodeBlock, Nav, Footer
 - [ ] Commit: `feat: marketing site scaffold and base components`
 
 **Day 18: Pages & Demo**
+
 - [ ] Implement landing page with animated terminal demo (video or embedded player)
 - [ ] Implement `/docs` with quickstart, commands reference, and config examples
 - [ ] Implement `/install` with copy-paste install commands for npm/pnpm/yarn
@@ -1243,12 +1318,14 @@ Sift starts services in topological order. `api` waits until `db` and `redis` ha
 - [ ] Commit: `feat: marketing site pages and demo`
 
 **Day 19: Polish & Integrations**
+
 - [ ] Add SEO metadata, Open Graph / Twitter card tags, favicon and Star on Github button
 - [ ] Add dark/light mode toggle (default dark to match terminal aesthetic)
 - [ ] Set up GitHub link, npm badge, license badge
 - [ ] Commit: `feat: marketing site polish and SEO`
 
 **Day 20: Deploy**
+
 - [ ] Configure static export / build for hosting (Vercel, Netlify, Cloudflare Pages, or GitHub Pages)
 - [ ] Set up custom domain or subdomain (e.g., `sift.dev`)
 - [ ] Add CI workflow to deploy on push to `main`
@@ -1256,6 +1333,7 @@ Sift starts services in topological order. `api` waits until `db` and `redis` ha
 - [ ] Commit: `chore: deploy marketing website`
 
 **Explicitly OUT of MVP:**
+
 - Request correlation (requires pre-instrumented tracing)
 - `sift attach` (infeasible as specified)
 - Interactive TTY panels (node-pty is its own multi-week project)
@@ -1300,14 +1378,14 @@ tests/fixtures/
 
 ### Test Coverage Goals
 
-| Module | Target | Key Cases |
-|--------|--------|-----------|
-| `detector.ts` | 90% | Auto-detect from package.json, subdirectories, missing package.json |
-| `spawner.ts` | 85% | Spawn, kill, restart, crash detection, TTY allocation |
-| `parser.ts` | 95% | All timestamp formats, all level patterns, JSON, multi-line, ANSI |
-| `buffer.ts` | 95% | Ring buffer wrap, filtering, search, memory limits |
-| `correlator.ts` | 90% | Request ID extraction, cross-service matching, trace view |
-| `ui/` | 70% | Render without crash, keyboard handling, resize |
+| Module          | Target | Key Cases                                                           |
+| --------------- | ------ | ------------------------------------------------------------------- |
+| `detector.ts`   | 90%    | Auto-detect from package.json, subdirectories, missing package.json |
+| `spawner.ts`    | 85%    | Spawn, kill, restart, crash detection, TTY allocation               |
+| `parser.ts`     | 95%    | All timestamp formats, all level patterns, JSON, multi-line, ANSI   |
+| `buffer.ts`     | 95%    | Ring buffer wrap, filtering, search, memory limits                  |
+| `correlator.ts` | 90%    | Request ID extraction, cross-service matching, trace view           |
+| `ui/`           | 70%    | Render without crash, keyboard handling, resize                     |
 
 ---
 
@@ -1377,6 +1455,7 @@ sift config init            # Create config file
 ```
 
 **Platform Support:**
+
 - macOS: Full support (primary development platform)
 - Linux: Full support
 - Windows: Via WSL2. Native Windows support is not in MVP (relies on Unix signals and process model).
@@ -1409,6 +1488,7 @@ Implemented in `src/core/metrics.ts` and `src/utils/http.ts`:
 - [x] Service health indicators (green/yellow/red based on error ratio)
 
 ### 17.3 Log Persistence
+
 - [x] Save session to SQLite database
 - [x] Query past sessions: `sift replay --session yesterday`
 - [x] Compare two sessions: `sift diff session1 session2`
@@ -1423,6 +1503,7 @@ Implemented in `src/core/metrics.ts` and `src/utils/http.ts`:
 - Integrates with GitHub Actions annotations
 
 ### 17.7 Remote Services
+
 - `sift remote ssh://server.prod` — tail logs from remote servers
 - Supports SSH tunneling for secure access
 
@@ -1430,11 +1511,11 @@ Implemented in `src/core/metrics.ts` and `src/utils/http.ts`:
 
 ## Document History
 
-| Version | Date | Author | Changes |
-|---------|------|--------|---------|
-| 1.0 | 2026-01-15 | Abdul-Qudus Rufai | Initial comprehensive PRD with 20 edge cases |
-| 1.1 | 2026-07-10 | Abdul-Qudus Rufai | Post-review fixes: competitive landscape, ESM build, realistic MVP, pipe mode, parser reorganization, colorblind palette, attach removal |
+| Version | Date       | Author            | Changes                                                                                                                                  |
+| ------- | ---------- | ----------------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
+| 1.0     | 2026-01-15 | Abdul-Qudus Rufai | Initial comprehensive PRD with 20 edge cases                                                                                             |
+| 1.1     | 2026-07-10 | Abdul-Qudus Rufai | Post-review fixes: competitive landscape, ESM build, realistic MVP, pipe mode, parser reorganization, colorblind palette, attach removal |
 
 ---
 
-*End of PRD*
+_End of PRD_

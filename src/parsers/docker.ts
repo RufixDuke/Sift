@@ -18,7 +18,12 @@ export function parseDocker(
       try {
         const parsed = JSON.parse(rest) as Record<string, unknown>;
         const level = detectLevel(String(parsed.level ?? ''));
-        const message = typeof parsed.message === 'string' ? parsed.message : typeof parsed.msg === 'string' ? parsed.msg : rest;
+        const message =
+          typeof parsed.message === 'string'
+            ? parsed.message
+            : typeof parsed.msg === 'string'
+              ? parsed.msg
+              : rest;
         const timestamp = parsed.timestamp || parsed.time || parsed.ts;
         return {
           level: level === 'unknown' ? 'info' : level,

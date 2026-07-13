@@ -13,9 +13,11 @@ export interface BackdropProps {
 export function Backdrop({ width, height, backgroundColor }: BackdropProps): React.ReactElement {
   const line = ' '.repeat(Math.max(0, width));
   return (
-    <Box position="absolute" top={0} left={0} flexDirection="column">
+    <Box position="absolute" flexDirection="column">
       {Array.from({ length: Math.max(0, height) }, (_, i) => (
-        <Text key={i} backgroundColor={backgroundColor}>{line}</Text>
+        <Text key={i} backgroundColor={backgroundColor}>
+          {line}
+        </Text>
       ))}
     </Box>
   );

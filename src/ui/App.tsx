@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useCallback, useRef } from 'react';
-import { Box, Text, useInput, useApp, useStdout } from 'ink';
+import { Box, useInput, useApp, useStdout } from 'ink';
 import type { ServiceState, ParsedLogEntry, Filters } from '../types/index.js';
 import { LogBuffer } from '../core/buffer.js';
 import type { MetricsTracker } from '../core/metrics.js';
@@ -38,7 +38,7 @@ export function App({
 }: AppProps): React.ReactElement {
   const { exit } = useApp();
   const { stdout } = useStdout();
-  const [services, setServices] = useState<ServiceState[]>(initialServices);
+  const [services] = useState<ServiceState[]>(initialServices);
   const [entries, setEntries] = useState<ParsedLogEntry[]>(buffer.getAll());
   const [selectedIndex, setSelectedIndex] = useState(0);
   const [filters, setFilters] = useState<Filters>({ level: 'all' });
@@ -85,10 +85,12 @@ export function App({
   });
 
   const matchCount = filters.query
-    ? filteredEntries.filter((e) => e.raw.toLowerCase().includes(filters.query.toLowerCase())).length
+    ? filteredEntries.filter((e) => e.raw.toLowerCase().includes(filters.query!.toLowerCase()))
+        .length
     : 0;
 
-  const selectedEntry = filteredEntries[Math.min(selectedIndex, Math.max(0, filteredEntries.length - 1))];
+  const selectedEntry =
+    filteredEntries[Math.min(selectedIndex, Math.max(0, filteredEntries.length - 1))];
 
   const scheduleRender = useCallback(() => {
     if (pendingRender.current !== null) return;
@@ -179,12 +181,6 @@ export function App({
         if (next === filteredEntries.length - 1) followTail.current = true;
         return next;
       });
-    } else if (key.home) {
-      followTail.current = false;
-      setSelectedIndex(0);
-    } else if (key.end) {
-      followTail.current = true;
-      setSelectedIndex(filteredEntries.length - 1);
     }
 
     if (input === '/') {
@@ -215,12 +211,14 @@ export function App({
 
     if (input === 'n' && filters.query) {
       const next = filteredEntries.findIndex(
-        (e, idx) => idx > selectedIndex && e.raw.toLowerCase().includes(filters.query!.toLowerCase()),
+        (e, idx) =>
+          idx > selectedIndex && e.raw.toLowerCase().includes(filters.query!.toLowerCase()),
       );
       if (next >= 0) setSelectedIndex(next);
     } else if (input === 'N' && filters.query) {
       const prev = filteredEntries.findLastIndex(
-        (e, idx) => idx < selectedIndex && e.raw.toLowerCase().includes(filters.query!.toLowerCase()),
+        (e, idx) =>
+          idx < selectedIndex && e.raw.toLowerCase().includes(filters.query!.toLowerCase()),
       );
       if (prev >= 0) setSelectedIndex(prev);
     }
@@ -291,7 +289,9 @@ export function App({
             else next.add(svc.name);
             return next;
           });
-          flashStatusMessage(hiddenServices.has(svc.name) ? `Showing ${svc.name}` : `Hiding ${svc.name}`);
+          flashStatusMessage(
+            hiddenServices.has(svc.name) ? `Showing ${svc.name}` : `Hiding ${svc.name}`,
+          );
         }
       }
       return;
@@ -314,10 +314,6 @@ export function App({
     }
   });
 
-  const handleStatusChange = useCallback((updated: ServiceState) => {
-    setServices((prev) => prev.map((s) => (s.name === updated.name ? updated : s)));
-  }, []);
-
   const handleSearchChange = (value: string) => {
     setQuery(value);
     setFilters((f) => ({ ...f, query: value }));
@@ -332,7 +328,7 @@ export function App({
     <Box flexDirection="column" width={dimensions.width} height={dimensions.height}>
       <Box flexDirection="row" flexGrow={1}>
         {sidebarWidth > 0 && (
-          <Box width={sidebarWidth} flexShrink={0} flexDirection="column" backgroundColor={theme.sidebar.bg}>
+          <Box width={sidebarWidth} flexShrink={0} flexDirection="column">
             <ServiceSidebar
               services={services}
               hiddenServices={hiddenServices}
@@ -366,10 +362,19 @@ export function App({
         isolatedService={isolatedService}
       />
       {overlay !== 'none' && (
-        <Backdrop width={dimensions.width} height={dimensions.height} backgroundColor={theme.sidebar.bg} />
+        <Backdrop
+          width={dimensions.width}
+          height={dimensions.height}
+          backgroundColor={theme.sidebar.bg}
+        />
       )}
       {overlay === 'search' && (
-        <SearchOverlay query={query} onChange={handleSearchChange} matchCount={matchCount} />
+        <SearchOverlay
+          query={query}
+          onChange={handleSearchChange}
+          matchCount={matchCount}
+          screenHeight={dimensions.height}
+        />
       )}
       {overlay === 'help' && <HelpOverlay />}
       {overlay === 'detail' && selectedEntry && (

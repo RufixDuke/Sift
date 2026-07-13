@@ -1,5 +1,4 @@
 import type { ParserContext, ParserResult } from '../types/index.js';
-import { extractTimestampFromPrefix } from '../utils/time.js';
 import { detectLevel } from '../core/parser.js';
 
 export function parseLogfmt(

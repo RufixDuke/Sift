@@ -1,5 +1,6 @@
 import { createReadStream, watchFile, unwatchFile, statSync } from 'node:fs';
 import { createInterface } from 'node:readline';
+import { resolve } from 'node:path';
 import { render } from 'ink';
 import React from 'react';
 import type { ServiceConfig } from '../../types/index.js';
@@ -13,6 +14,9 @@ import { createServiceState } from '../../core/service.js';
 import { MultiLineAssembler } from '../../core/multiline.js';
 import { isPrintableLine, replaceNonPrintable } from '../../utils/ansi.js';
 import { Persistence } from '../../core/persistence.js';
+import { getLastRun, saveLastRun, applyLastRun } from '../../core/lastRun.js';
+import { initSelectorState, resolveSelection } from '../../core/selectorState.js';
+import { promptRunLastRun, runServiceSelector } from '../interactive.js';
 import { App } from '../../ui/App.js';
 
 export interface RunOptions {
@@ -26,6 +30,9 @@ export interface RunOptions {
   stripAnsi?: boolean;
   sessionName?: string;
   save?: boolean;
+  all?: boolean;
+  yes?: boolean;
+  select?: boolean;
 }
 
 export async function runCommand(options: RunOptions): Promise<void> {
@@ -38,7 +45,9 @@ export async function runCommand(options: RunOptions): Promise<void> {
 
   if (persistence && !persistence.isAvailable() && options.save !== false) {
     console.warn('⚠ SQLite persistence is unavailable. Sessions will not be saved.');
-    console.warn('  Install build tools to enable replay/diff: https://github.com/RufixDuke/Sift#build-tools');
+    console.warn(
+      '  Install build tools to enable replay/diff: https://github.com/RufixDuke/Sift#build-tools',
+    );
   }
 
   const sessionName = options.sessionName;
@@ -76,6 +85,54 @@ export async function runCommand(options: RunOptions): Promise<void> {
   if (options.exclude) {
     const excludeSet = new Set(options.exclude.split(',').map((s) => s.trim()));
     services = services.filter((s) => !excludeSet.has(s.name));
+  }
+
+  if (!options.all && process.stdin.isTTY) {
+    const cwd = resolve(process.cwd());
+    const lastRun = getLastRun(cwd);
+    let result: ReturnType<typeof resolveSelection> | null = null;
+
+    if (lastRun && !options.select) {
+      const acceptLastRun = options.yes || (await promptRunLastRun(lastRun));
+      if (acceptLastRun) {
+        const applied = applyLastRun(services, lastRun);
+        if (applied.length > 0) {
+          result = {
+            services: applied,
+            serviceNames: lastRun.serviceNames.filter((n) => services.some((s) => s.name === n)),
+            commandOverrides: lastRun.commandOverrides,
+            customServices: lastRun.customServices,
+          };
+        } else {
+          console.warn(
+            'Saved services from last run were not found in this project; opening the picker.',
+          );
+        }
+      }
+    }
+
+    if (!result) {
+      if (options.yes) {
+        result = resolveSelection(initSelectorState(services), services);
+      } else {
+        result = await runServiceSelector(services, lastRun);
+        if (!result) {
+          process.exit(0);
+        }
+      }
+    }
+
+    services = result.services;
+    if (services.length === 0) {
+      console.error('No services selected.');
+      process.exit(1);
+    }
+
+    saveLastRun(cwd, {
+      serviceNames: result.serviceNames,
+      commandOverrides: result.commandOverrides,
+      customServices: result.customServices,
+    });
   }
 
   const buffer = new LogBuffer({ capacity: settings.bufferSize });
@@ -181,7 +238,7 @@ export function readLines(filePath: string, onLine: (line: string) => void): Lin
       resolveWait = null;
     }
     if (watcher) {
-      unwatchFile(filePath, watcher);
+      unwatchFile(filePath);
       watcher = null;
     }
   };
@@ -201,7 +258,7 @@ export function readLines(filePath: string, onLine: (line: string) => void): Lin
       watcher = watchFile(filePath, { interval: 200 }, (curr, prev) => {
         if (curr.size !== prev.size || curr.mtimeMs !== prev.mtimeMs) {
           if (watcher) {
-            unwatchFile(filePath, watcher);
+            unwatchFile(filePath);
             watcher = null;
           }
           if (resolveWait) {

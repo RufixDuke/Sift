@@ -47,7 +47,12 @@ export function detectPythonServices(dir: string): RawService[] {
       .join('\n')
       .toLowerCase();
     if (depsText.includes('celery')) {
-      services.push({ name: 'worker', command: `${runner}celery -A app worker -l info`, type: 'worker' });
+      services.push({
+        name: 'worker',
+        command: `${runner}celery -A app worker -l info`,
+        type: 'worker',
+        guessed: true,
+      });
     }
     return services;
   }
@@ -61,7 +66,11 @@ export function detectPythonServices(dir: string): RawService[] {
     if (fastapiMatch) {
       const module = toModule(candidate);
       return [
-        { name: 'server', command: `${runner}uvicorn ${module}:${fastapiMatch[1]} --reload`, type: 'server' },
+        {
+          name: 'server',
+          command: `${runner}uvicorn ${module}:${fastapiMatch[1]} --reload`,
+          type: 'server',
+        },
       ];
     }
 

@@ -27,23 +27,32 @@ export function DetailView({ entry, width, height }: DetailViewProps): React.Rea
     <Box
       flexDirection="column"
       position="absolute"
-      top={2}
-      left="10%"
+      alignSelf="center"
+      marginTop={2}
       width="80%"
       height={height}
       borderStyle="round"
       borderColor={theme.border.fg}
-      backgroundColor={theme.sidebar.bg}
       paddingX={2}
       paddingY={1}
     >
-      <Text bold color={theme.sidebar.fg}>Log Detail</Text>
+      <Text bold color={theme.sidebar.fg}>
+        Log Detail
+      </Text>
       <Box flexDirection="column" marginTop={1}>
         {visible.map((line, idx) => {
           if (line.startsWith('Message:')) {
-            return <Text key={idx} bold color={theme.sidebar.fg}>{line}</Text>;
+            return (
+              <Text key={idx} bold color={theme.sidebar.fg}>
+                {line}
+              </Text>
+            );
           }
-          return <Text key={idx} color={theme.sidebar.fg}>{line.slice(0, width - 6)}</Text>;
+          return (
+            <Text key={idx} color={theme.sidebar.fg}>
+              {line.slice(0, width - 6)}
+            </Text>
+          );
         })}
       </Box>
       <Box marginTop={1}>

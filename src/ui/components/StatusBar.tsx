@@ -17,13 +17,31 @@ export interface StatusBarProps {
   isolatedService?: string | null;
 }
 
-export function StatusBar({ services, totalLogs, paused, filters, width, highVolume = false, tracker, statusMessage, isolatedService }: StatusBarProps): React.ReactElement {
+export function StatusBar({
+  services,
+  totalLogs,
+  paused,
+  filters,
+  width,
+  highVolume = false,
+  tracker,
+  statusMessage,
+  isolatedService,
+}: StatusBarProps): React.ReactElement {
   const running = services.filter((s) => s.status === 'running').length;
   const crashed = services.filter((s) => s.status === 'crashed' || s.status === 'unstable').length;
 
   const statusText = paused ? 'Paused' : crashed > 0 ? `${crashed} crashed` : 'Running';
-  const statusBg = paused ? theme.statusWarn.bg : crashed > 0 ? theme.statusError.bg : theme.statusBar.bg;
-  const statusFg = paused ? theme.statusWarn.fg : crashed > 0 ? theme.statusError.fg : theme.statusBar.fg;
+  const statusBg = paused
+    ? theme.statusWarn.bg
+    : crashed > 0
+      ? theme.statusError.bg
+      : theme.statusBar.bg;
+  const statusFg = paused
+    ? theme.statusWarn.fg
+    : crashed > 0
+      ? theme.statusError.fg
+      : theme.statusBar.fg;
 
   const levelText = filters.level && filters.level !== 'all' ? `level:${filters.level}` : '';
   const queryText = filters.query ? `search:${filters.query}` : '';
@@ -44,9 +62,15 @@ export function StatusBar({ services, totalLogs, paused, filters, width, highVol
   const centerPad = Math.max(0, width - left.length - right.length);
 
   return (
-    <Box width={width} backgroundColor={theme.statusBar.bg}>
-      <Text backgroundColor={statusBg} color={statusFg}>{left}</Text>
-      <Text backgroundColor={statusMessage ? theme.highlight.bg : undefined} color={statusMessage ? theme.highlight.fg : theme.statusBar.fg} bold={Boolean(statusMessage)}>
+    <Box width={width}>
+      <Text backgroundColor={statusBg} color={statusFg}>
+        {left}
+      </Text>
+      <Text
+        backgroundColor={statusMessage ? theme.highlight.bg : undefined}
+        color={statusMessage ? theme.highlight.fg : theme.statusBar.fg}
+        bold={Boolean(statusMessage)}
+      >
         {center.padEnd(centerPad)}
       </Text>
       <Text color={theme.statusBar.fg}>{right}</Text>

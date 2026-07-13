@@ -97,6 +97,7 @@ function finalize(
       cwd: dir,
       color,
       type: svc.type,
+      guessed: svc.guessed,
     });
   }
 

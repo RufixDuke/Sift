@@ -8,18 +8,26 @@ export interface SearchOverlayProps {
   onChange: (query: string) => void;
   onSubmit?: (query: string) => void;
   matchCount?: number;
+  screenHeight: number;
 }
 
-export function SearchOverlay({ query, onChange, onSubmit, matchCount = 0 }: SearchOverlayProps): React.ReactElement {
+const OVERLAY_HEIGHT = 3;
+const RESERVED_BOTTOM_ROWS = 1;
+
+export function SearchOverlay({
+  query,
+  onChange,
+  onSubmit,
+  matchCount = 0,
+  screenHeight,
+}: SearchOverlayProps): React.ReactElement {
   return (
     <Box
       flexDirection="column"
       position="absolute"
-      bottom={1}
-      left={0}
-      right={0}
-      height={3}
-      backgroundColor={theme.statusBar.bg}
+      width="100%"
+      marginTop={Math.max(0, screenHeight - OVERLAY_HEIGHT - RESERVED_BOTTOM_ROWS)}
+      height={OVERLAY_HEIGHT}
       paddingX={1}
     >
       <Box flexDirection="row">
@@ -32,7 +40,10 @@ export function SearchOverlay({ query, onChange, onSubmit, matchCount = 0 }: Sea
           showCursor
         />
         {query && (
-          <Text color={theme.muted.fg}>  {matchCount} match{matchCount !== 1 ? 'es' : ''}</Text>
+          <Text color={theme.muted.fg}>
+            {' '}
+            {matchCount} match{matchCount !== 1 ? 'es' : ''}
+          </Text>
         )}
       </Box>
       <Text color={theme.muted.fg}>Enter to search, Esc to close, n/N for next/prev</Text>

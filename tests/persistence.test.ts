@@ -49,7 +49,11 @@ describe('Persistence', () => {
   });
 
   it('creates a session and returns an id', () => {
-    const id = persistence.createSession({ name: 'test-session', command: 'sift run', serviceCount: 2 });
+    const id = persistence.createSession({
+      name: 'test-session',
+      command: 'sift run',
+      serviceCount: 2,
+    });
     expect(id).toBeGreaterThan(0);
 
     const session = persistence.findSession('test-session');
@@ -95,7 +99,10 @@ describe('Persistence', () => {
     yesterday.createSession({ name: 'yesterday-session' });
     // Override created_at to yesterday by raw SQL for alias testing.
     // @ts-expect-error private access
-    yesterday.loadDb().prepare('UPDATE sessions SET created_at = ? WHERE name = ?').run(now - 24 * 60 * 60 * 1000, 'yesterday-session');
+    const yesterdayDb = yesterday.loadDb();
+    yesterdayDb
+      .prepare('UPDATE sessions SET created_at = ? WHERE name = ?')
+      .run(now - 24 * 60 * 60 * 1000, 'yesterday-session');
     yesterday.close();
 
     const todaySession = persistence.findSession('today');

@@ -1,6 +1,5 @@
 import type { ParserContext, ParserResult, LogLevel } from '../types/index.js';
-import { parseTimestamp, extractTimestampFromPrefix } from '../utils/time.js';
-import { detectLevel } from '../core/parser.js';
+import { parseTimestamp } from '../utils/time.js';
 
 const LEVEL_FIELD_MAP: Record<string, LogLevel> = {
   10: 'trace',

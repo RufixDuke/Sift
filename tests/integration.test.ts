@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { readFileSync, readdirSync } from 'node:fs';
+import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { parseLogLine } from '../src/core/parser.js';
 import { detectServices } from '../src/core/detector.js';
@@ -17,7 +17,7 @@ function parseFixture(fileName: string): ReturnType<typeof parseLogLine>[] {
   return content
     .split('\n')
     .filter((line) => line.trim().length > 0)
-    .map((line, idx) =>
+    .map((line) =>
       parseLogLine(line, { service: 'fixture', stream: 'stdout' }, { injectTimestamps: false }),
     );
 }
@@ -52,7 +52,13 @@ describe('fixtures', () => {
     assembler.on('entry', (e) => emitted.push(e));
 
     for (const line of content.split('\n').filter((l) => l.trim())) {
-      assembler.feed({ raw: line, service: 'api', stream: 'stderr', serviceColor: '#f00', sequence: 0 });
+      assembler.feed({
+        raw: line,
+        service: 'api',
+        stream: 'stderr',
+        serviceColor: '#f00',
+        sequence: 0,
+      });
     }
     assembler.flush();
 
@@ -79,13 +85,19 @@ describe('detectServices integration', () => {
 
     const services = detectServices({ packagePath: join(tempDir, 'package.json') });
     expect(services.length).toBe(5);
+    const names = services.map((s) => s.name).sort();
+    expect(names).toEqual(['api', 'db', 'mobile', 'stripe', 'web']);
 
     rmSync(tempDir, { recursive: true, force: true });
   });
 });
 
 describe('log pipeline: assembler → parser → buffer', () => {
-  function runPipeline(rawLines: string[], service = 'server', stream: 'stdout' | 'stderr' = 'stdout') {
+  function runPipeline(
+    rawLines: string[],
+    service = 'server',
+    stream: 'stdout' | 'stderr' = 'stdout',
+  ) {
     const assembler = new MultiLineAssembler();
     const buffer = new LogBuffer({ capacity: 1000 });
     let seq = 0;
@@ -252,10 +264,34 @@ describe('log pipeline: assembler → parser → buffer', () => {
       buffer.append(entry);
     });
 
-    assembler.feed({ raw: 'INFO:     Application startup complete.', service: 'api', stream: 'stdout', serviceColor: '#00BCD4', sequence: ++seq });
-    assembler.feed({ raw: 'DeprecationWarning: use X instead', service: 'api', stream: 'stderr', serviceColor: '#00BCD4', sequence: ++seq });
-    assembler.feed({ raw: 'I, [2026-07-13T10:00:00.123 #1]  INFO -- : Started GET "/"', service: 'web', stream: 'stdout', serviceColor: '#2196F3', sequence: ++seq });
-    assembler.feed({ raw: '2026-07-13T10:00:00.456Z\tinfo\tapi/server.go:42\tstarted', service: 'go-api', stream: 'stdout', serviceColor: '#9C27B0', sequence: ++seq });
+    assembler.feed({
+      raw: 'INFO:     Application startup complete.',
+      service: 'api',
+      stream: 'stdout',
+      serviceColor: '#00BCD4',
+      sequence: ++seq,
+    });
+    assembler.feed({
+      raw: 'DeprecationWarning: use X instead',
+      service: 'api',
+      stream: 'stderr',
+      serviceColor: '#00BCD4',
+      sequence: ++seq,
+    });
+    assembler.feed({
+      raw: 'I, [2026-07-13T10:00:00.123 #1]  INFO -- : Started GET "/"',
+      service: 'web',
+      stream: 'stdout',
+      serviceColor: '#2196F3',
+      sequence: ++seq,
+    });
+    assembler.feed({
+      raw: '2026-07-13T10:00:00.456Z\tinfo\tapi/server.go:42\tstarted',
+      service: 'go-api',
+      stream: 'stdout',
+      serviceColor: '#9C27B0',
+      sequence: ++seq,
+    });
     assembler.flush();
 
     expect(buffer.length()).toBe(4);
@@ -270,10 +306,10 @@ describe('log pipeline: assembler → parser → buffer', () => {
 
   it('entries with timestamps are immediately available in buffer', () => {
     const buffer = new LogBuffer({ capacity: 100 });
-    const entry = parseLogLine(
-      '2026-07-13 10:00:00,123 - myapp - INFO - Hello',
-      { service: 'api', stream: 'stdout' },
-    );
+    const entry = parseLogLine('2026-07-13 10:00:00,123 - myapp - INFO - Hello', {
+      service: 'api',
+      stream: 'stdout',
+    });
     expect(entry.timestamp).toBeInstanceOf(Date);
     buffer.append(entry);
     expect(buffer.length()).toBe(1);
@@ -319,4 +355,3 @@ describe('readLines file follow', () => {
     rmSync(tempDir, { recursive: true, force: true });
   });
 });
-

@@ -86,7 +86,9 @@ export async function diffCommand(
 
   console.log('Diff summary');
   console.log(`  ${pad('metric', 14)} ${pad('A', 10)} ${pad('B', 10)} ${pad('Δ', 10)}`);
-  console.log(`  ${pad('total logs', 14)} ${pad(a.logCount, 10)} ${pad(b.logCount, 10)} ${pad(b.logCount - a.logCount, 10)}`);
+  console.log(
+    `  ${pad('total logs', 14)} ${pad(a.logCount, 10)} ${pad(b.logCount, 10)} ${pad(b.logCount - a.logCount, 10)}`,
+  );
 
   for (const level of Array.from(allLevels).sort()) {
     const ca = summaryA.levelCounts[level] ?? 0;

@@ -11,7 +11,9 @@ export function parseGeneric(
   const level = detectLevel(rest);
 
   let message = rest;
-  const levelPrefixMatch = message.match(/^(?:\[)?(ERROR|WARN|WARNING|INFO|DEBUG|TRACE)(?:\])?[:\s]+/i);
+  const levelPrefixMatch = message.match(
+    /^(?:\[)?(ERROR|WARN|WARNING|INFO|DEBUG|TRACE)(?:\])?[:\s]+/i,
+  );
   if (levelPrefixMatch) {
     message = message.slice(levelPrefixMatch[0].length).trim();
   }

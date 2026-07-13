@@ -27,7 +27,7 @@ const ServiceConfigSchema = z.object({
   name: z.string().min(1),
   command: z.string().min(1),
   cwd: z.string().optional(),
-  env: z.record(z.string()).optional(),
+  env: z.record(z.string(), z.string()).optional(),
   color: z.string().optional(),
   parser: z.string().optional(),
   dependsOn: z.array(z.string()).optional(),
@@ -93,7 +93,9 @@ export function resolveConfig(configPath?: string): ConfigResolution | null {
           const issues = err.issues.map((i) => `${i.path.join('.')}: ${i.message}`).join('; ');
           throw new Error(`Invalid config at ${path}: ${issues}`);
         }
-        throw new Error(`Failed to parse config at ${path}: ${err instanceof Error ? err.message : String(err)}`);
+        throw new Error(
+          `Failed to parse config at ${path}: ${err instanceof Error ? err.message : String(err)}`,
+        );
       }
     }
   }

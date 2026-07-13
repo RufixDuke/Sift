@@ -34,7 +34,8 @@ export function extractHttpMetric(message: string): HttpMetric | null {
 
   // Require an HTTP method or a common access-log shape to reduce false positives.
   const methodMatch = message.match(METHOD_PATTERN);
-  const hasPath = /"\s*(?:GET|POST|PUT|DELETE|PATCH|OPTIONS|HEAD)\s+\//i.test(message) ||
+  const hasPath =
+    /"\s*(?:GET|POST|PUT|DELETE|PATCH|OPTIONS|HEAD)\s+\//i.test(message) ||
     /\b(?:GET|POST|PUT|DELETE|PATCH|OPTIONS|HEAD)\s+\/\S+/i.test(message);
 
   if (!methodMatch && !hasPath) return null;

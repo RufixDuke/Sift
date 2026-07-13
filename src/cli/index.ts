@@ -2,7 +2,6 @@
 import { Command } from 'commander';
 import { runCommand } from './commands/run.js';
 import { configCommand } from './commands/config.js';
-import { versionCommand } from './commands/version.js';
 import { replayCommand } from './commands/replay.js';
 import { diffCommand } from './commands/diff.js';
 import { readFileSync } from 'node:fs';
@@ -42,6 +41,15 @@ program
   .option('--strip-ansi', 'Strip ANSI color codes from output')
   .option('--session-name <name>', 'Name for the saved session')
   .option('--no-save', 'Do not persist this session to SQLite')
+  .option('--all', 'Run every detected service without prompting for a selection')
+  .option(
+    '-y, --yes',
+    'Skip prompts: reuse the last run selection, or run all confident (non-guessed) services',
+  )
+  .option(
+    '--select',
+    'Force the service picker even if a previous selection was saved for this project',
+  )
   .action(runCommand);
 
 program

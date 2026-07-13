@@ -3,7 +3,11 @@ import { extractHttpMetric } from '../src/utils/http.js';
 import { MetricsTracker, formatSparkline } from '../src/core/metrics.js';
 import type { ParsedLogEntry } from '../src/types/index.js';
 
-function makeEntry(message: string, level: ParsedLogEntry['level'] = 'info', service = 'api'): ParsedLogEntry {
+function makeEntry(
+  message: string,
+  level: ParsedLogEntry['level'] = 'info',
+  service = 'api',
+): ParsedLogEntry {
   return {
     id: 1,
     raw: message,

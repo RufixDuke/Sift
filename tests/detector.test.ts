@@ -87,16 +87,18 @@ describe('detectServices', () => {
   });
 
   describe('python', () => {
-    it('detects a Django project and its Celery worker', () => {
+    it('detects a Django project and its Celery worker (guessed)', () => {
       writeFileSync(join(tempDir, 'manage.py'), '#!/usr/bin/env python');
       writeFileSync(join(tempDir, 'requirements.txt'), 'django\ncelery\n');
 
       const services = detectServices({ packagePath: join(tempDir, 'package.json') });
       expect(services).toHaveLength(2);
-      expect(services.find((s) => s.name === 'server')?.command).toBe('python manage.py runserver');
-      expect(services.find((s) => s.name === 'worker')?.command).toBe(
-        'celery -A app worker -l info',
-      );
+      const server = services.find((s) => s.name === 'server');
+      const worker = services.find((s) => s.name === 'worker');
+      expect(server?.command).toBe('python manage.py runserver');
+      expect(server?.guessed).toBeFalsy();
+      expect(worker?.command).toBe('celery -A app worker -l info');
+      expect(worker?.guessed).toBe(true);
     });
 
     it('detects a FastAPI app and builds an uvicorn command', () => {
@@ -138,7 +140,10 @@ describe('detectServices', () => {
     it('does not duplicate a FastAPI app/main.py entry when recursing into app/', () => {
       writeFileSync(join(tempDir, 'requirements.txt'), 'fastapi\nuvicorn\n');
       mkdirSync(join(tempDir, 'app'));
-      writeFileSync(join(tempDir, 'app', 'main.py'), 'from fastapi import FastAPI\napp = FastAPI()\n');
+      writeFileSync(
+        join(tempDir, 'app', 'main.py'),
+        'from fastapi import FastAPI\napp = FastAPI()\n',
+      );
 
       const services = detectServices({ packagePath: join(tempDir, 'package.json') });
       expect(services).toHaveLength(1);
@@ -181,14 +186,16 @@ describe('detectServices', () => {
   });
 
   describe('ruby', () => {
-    it('detects a Rails app with Sidekiq', () => {
+    it('detects a Rails app with Sidekiq (guessed)', () => {
       writeFileSync(join(tempDir, 'Gemfile'), 'gem "rails"\ngem "sidekiq"\n');
       mkdirSync(join(tempDir, 'bin'));
       writeFileSync(join(tempDir, 'bin', 'rails'), '#!/usr/bin/env ruby');
 
       const services = detectServices({ packagePath: join(tempDir, 'package.json') });
       expect(services.find((s) => s.name === 'server')?.command).toBe('bin/rails server');
-      expect(services.find((s) => s.name === 'worker')?.command).toBe('bundle exec sidekiq');
+      const worker = services.find((s) => s.name === 'worker');
+      expect(worker?.command).toBe('bundle exec sidekiq');
+      expect(worker?.guessed).toBe(true);
     });
 
     it('falls back to rackup for a plain Rack app', () => {
@@ -232,7 +239,7 @@ describe('detectServices', () => {
   });
 
   describe('php', () => {
-    it('detects a Laravel app with a queue worker', () => {
+    it('detects a Laravel app with a queue worker (guessed)', () => {
       writeFileSync(join(tempDir, 'composer.json'), '{}');
       writeFileSync(join(tempDir, 'artisan'), '#!/usr/bin/env php');
       mkdirSync(join(tempDir, 'config'));
@@ -240,7 +247,9 @@ describe('detectServices', () => {
 
       const services = detectServices({ packagePath: join(tempDir, 'package.json') });
       expect(services.find((s) => s.name === 'server')?.command).toBe('php artisan serve');
-      expect(services.find((s) => s.name === 'worker')?.command).toBe('php artisan queue:work');
+      const worker = services.find((s) => s.name === 'worker');
+      expect(worker?.command).toBe('php artisan queue:work');
+      expect(worker?.guessed).toBe(true);
     });
 
     it('detects a bare index.php with no composer.json', () => {
@@ -285,7 +294,7 @@ describe('detectServices', () => {
   });
 
   describe('Procfile', () => {
-    it('detects web and worker processes and skips release', () => {
+    it('detects web and worker processes (worker guessed) and skips release', () => {
       writeFileSync(
         join(tempDir, 'Procfile'),
         'web: gunicorn app:app\nworker: celery -A app worker\nrelease: python manage.py migrate\n',
@@ -294,8 +303,12 @@ describe('detectServices', () => {
       const services = detectServices({ packagePath: join(tempDir, 'package.json') });
       const names = services.map((s) => s.name).sort();
       expect(names).toEqual(['web', 'worker']);
-      expect(services.find((s) => s.name === 'web')?.type).toBe('server');
-      expect(services.find((s) => s.name === 'worker')?.type).toBe('worker');
+      const web = services.find((s) => s.name === 'web');
+      const worker = services.find((s) => s.name === 'worker');
+      expect(web?.type).toBe('server');
+      expect(web?.guessed).toBeFalsy();
+      expect(worker?.type).toBe('worker');
+      expect(worker?.guessed).toBe(true);
     });
   });
 

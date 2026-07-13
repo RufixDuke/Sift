@@ -5,7 +5,6 @@ import { theme } from '../theme.js';
 const SHORTCUTS = [
   ['↑ / ↓', 'Scroll logs (1 line)'],
   ['PgUp / PgDn', 'Scroll (10 lines)'],
-  ['Home / End', 'Jump to first / last log'],
   ['Space', 'Pause / resume stream'],
   ['/', 'Open search overlay'],
   ['n / N', 'Next / previous search match'],
@@ -31,17 +30,18 @@ export function HelpOverlay(): React.ReactElement {
     <Box
       flexDirection="column"
       position="absolute"
-      top={2}
-      left="20%"
+      alignSelf="center"
+      marginTop={2}
       width="60%"
       height={24}
       borderStyle="round"
       borderColor={theme.border.fg}
-      backgroundColor={theme.sidebar.bg}
       paddingX={2}
       paddingY={1}
     >
-      <Text bold underline color={theme.sidebar.fg}>Keyboard Shortcuts</Text>
+      <Text bold underline color={theme.sidebar.fg}>
+        Keyboard Shortcuts
+      </Text>
       <Box flexDirection="column" marginTop={1}>
         {SHORTCUTS.map(([key, desc]) => (
           <Box key={key} flexDirection="row">

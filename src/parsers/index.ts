@@ -19,7 +19,10 @@ export type ParserName =
   | 'logfmt'
   | 'generic';
 
-const PARSERS: { name: ParserName; fn: (line: string, stripped: string, ctx: ParserContext) => ParserResult | null }[] = [
+const PARSERS: {
+  name: ParserName;
+  fn: (line: string, stripped: string, ctx: ParserContext) => ParserResult | null;
+}[] = [
   { name: 'json-line', fn: parseJsonLine },
   { name: 'bracketed', fn: parseBracketed },
   { name: 'language', fn: parseLanguage },

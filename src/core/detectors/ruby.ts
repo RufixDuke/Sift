@@ -28,7 +28,12 @@ export function detectRubyServices(dir: string): RawService[] {
       : 'bundle exec rails server';
     const services: RawService[] = [{ name: 'server', command, type: 'server' }];
     if (gemfile.includes('sidekiq')) {
-      services.push({ name: 'worker', command: 'bundle exec sidekiq', type: 'worker' });
+      services.push({
+        name: 'worker',
+        command: 'bundle exec sidekiq',
+        type: 'worker',
+        guessed: true,
+      });
     }
     return services;
   }

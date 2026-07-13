@@ -3,10 +3,10 @@ import { parseLogLine, detectLevel, extractRequestId } from '../src/core/parser.
 
 describe('parseLogLine', () => {
   it('parses JSON structured logs', () => {
-    const entry = parseLogLine(
-      '{"level":30,"msg":"request completed","responseTime":45}',
-      { service: 'api', stream: 'stdout' },
-    );
+    const entry = parseLogLine('{"level":30,"msg":"request completed","responseTime":45}', {
+      service: 'api',
+      stream: 'stdout',
+    });
     expect(entry.level).toBe('info');
     expect(entry.message).toBe('request completed');
     expect(entry.metadata).toBeDefined();
@@ -49,10 +49,13 @@ describe('parseLogLine', () => {
   });
 
   it('extracts timestamps', () => {
-    const entry = parseLogLine('::1 - - [09/Jan/2026:09:32:15 +0000] "GET /health HTTP/1.1" 200 12ms', {
-      service: 'web',
-      stream: 'stdout',
-    });
+    const entry = parseLogLine(
+      '::1 - - [09/Jan/2026:09:32:15 +0000] "GET /health HTTP/1.1" 200 12ms',
+      {
+        service: 'web',
+        stream: 'stdout',
+      },
+    );
     expect(entry.timestamp).toBeInstanceOf(Date);
     expect(entry.level).toBe('info');
   });
@@ -66,29 +69,29 @@ describe('parseLogLine', () => {
   });
 
   it('parses language-specific logs (Python, Go, Rust, Ruby, Elixir)', () => {
-    const python = parseLogLine(
-      '2026-01-15 09:32:15,123 - django - INFO - Started server',
-      { service: 'web', stream: 'stdout' },
-    );
+    const python = parseLogLine('2026-01-15 09:32:15,123 - django - INFO - Started server', {
+      service: 'web',
+      stream: 'stdout',
+    });
     expect(python.level).toBe('info');
     expect(python.message).toBe('Started server');
 
-    const uvicorn = parseLogLine(
-      'INFO:     127.0.0.1:1234 - "GET /api/users HTTP/1.1" 200 OK',
-      { service: 'api', stream: 'stdout' },
-    );
+    const uvicorn = parseLogLine('INFO:     127.0.0.1:1234 - "GET /api/users HTTP/1.1" 200 OK', {
+      service: 'api',
+      stream: 'stdout',
+    });
     expect(uvicorn.level).toBe('info');
 
-    const djangoDev = parseLogLine(
-      '[15/Jan/2026 09:32:15] "GET /api/users HTTP/1.1" 200',
-      { service: 'web', stream: 'stdout' },
-    );
+    const djangoDev = parseLogLine('[15/Jan/2026 09:32:15] "GET /api/users HTTP/1.1" 200', {
+      service: 'web',
+      stream: 'stdout',
+    });
     expect(djangoDev.level).toBe('info');
 
-    const zap = parseLogLine(
-      '2026-01-15T09:32:15.123Z\tinfo\tapi/server.go:42\tstarted server',
-      { service: 'api', stream: 'stdout' },
-    );
+    const zap = parseLogLine('2026-01-15T09:32:15.123Z\tinfo\tapi/server.go:42\tstarted server', {
+      service: 'api',
+      stream: 'stdout',
+    });
     expect(zap.level).toBe('info');
     expect(zap.message).toContain('started server');
 
@@ -104,10 +107,10 @@ describe('parseLogLine', () => {
     );
     expect(rails.level).toBe('info');
 
-    const phoenix = parseLogLine(
-      '09:32:15.123 [info] GET /api/users',
-      { service: 'api', stream: 'stdout' },
-    );
+    const phoenix = parseLogLine('09:32:15.123 [info] GET /api/users', {
+      service: 'api',
+      stream: 'stdout',
+    });
     expect(phoenix.level).toBe('info');
   });
 

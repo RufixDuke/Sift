@@ -25,10 +25,13 @@ describe('performance', () => {
   it('searches 10,000 lines in under 100ms', () => {
     const buffer = new LogBuffer({ capacity: 10_000 });
     for (let i = 0; i < 10_000; i += 1) {
-      const entry = parseLogLine(`2026-01-15T09:32:15.123Z INFO request ${i} ${i % 1000 === 0 ? 'UNIQUE_MARKER' : ''}`, {
-        service: 'api',
-        stream: 'stdout',
-      });
+      const entry = parseLogLine(
+        `2026-01-15T09:32:15.123Z INFO request ${i} ${i % 1000 === 0 ? 'UNIQUE_MARKER' : ''}`,
+        {
+          service: 'api',
+          stream: 'stdout',
+        },
+      );
       buffer.append(entry);
     }
 

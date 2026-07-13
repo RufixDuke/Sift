@@ -17,7 +17,11 @@ export function detectRustServices(dir: string): RawService[] {
     .filter((name): name is string => Boolean(name));
 
   if (binNames.length > 0) {
-    return binNames.map((name) => ({ name, command: `cargo run --bin ${name}`, type: 'server' as const }));
+    return binNames.map((name) => ({
+      name,
+      command: `cargo run --bin ${name}`,
+      type: 'server' as const,
+    }));
   }
 
   const nameMatch = content.match(/\[package\][\s\S]*?name\s*=\s*"([^"]+)"/);

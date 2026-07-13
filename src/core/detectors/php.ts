@@ -15,9 +15,16 @@ export function detectPhpServices(dir: string): RawService[] {
   if (!existsSync(join(dir, 'composer.json'))) return detectPlainPhpScript(dir);
 
   if (existsSync(join(dir, 'artisan'))) {
-    const services: RawService[] = [{ name: 'server', command: 'php artisan serve', type: 'server' }];
+    const services: RawService[] = [
+      { name: 'server', command: 'php artisan serve', type: 'server' },
+    ];
     if (existsSync(join(dir, 'config', 'queue.php'))) {
-      services.push({ name: 'worker', command: 'php artisan queue:work', type: 'worker' });
+      services.push({
+        name: 'worker',
+        command: 'php artisan queue:work',
+        type: 'worker',
+        guessed: true,
+      });
     }
     return services;
   }

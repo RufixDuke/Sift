@@ -93,10 +93,7 @@ export class ServiceSpawner extends EventEmitter {
       PYTHONUNBUFFERED: '1',
       RUBYOPT: rubyOpt,
       ...service.env,
-      PATH: [
-        resolve(service.cwd ?? '.', 'node_modules', '.bin'),
-        process.env.PATH,
-      ].join(delimiter),
+      PATH: [resolve(service.cwd ?? '.', 'node_modules', '.bin'), process.env.PATH].join(delimiter),
     };
 
     if (npmRunMatch) {
@@ -176,11 +173,7 @@ export class ServiceSpawner extends EventEmitter {
     });
   }
 
-  private emitServiceLog(
-    service: ServiceState,
-    stream: 'stdout' | 'stderr',
-    raw: string,
-  ): void {
+  private emitServiceLog(service: ServiceState, stream: 'stdout' | 'stderr', raw: string): void {
     service.logCount += 1;
     service.lastOutputAt = new Date();
     if (service.status === 'idle') service.status = 'running';
@@ -204,7 +197,7 @@ export class ServiceSpawner extends EventEmitter {
     this.shuttingDown = true;
     const promises: Promise<void>[] = [];
 
-    for (const [name, child] of this.processes) {
+    for (const child of this.processes.values()) {
       promises.push(
         new Promise((resolve) => {
           if (child.killed || child.exitCode !== null) {

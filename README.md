@@ -37,11 +37,16 @@ concurrently "npm:dev" "npm:server" 2>&1 | sift run --file -
 
 ### Run services directly
 
-From a project with a `package.json`, Sift auto-detects runnable services:
+From a project with a `package.json`, Sift auto-detects runnable services and lets you pick
+which ones to run (multi-select, with the option to edit a command or add your own):
 
 ```bash
 sift run
 ```
+
+Sift remembers your selection per project — the next `sift run` in that directory offers to
+reuse it. Guessed commands (e.g. a Celery/Sidekiq worker) are detected but left unchecked by
+default since they often need project-specific arguments.
 
 ## CLI Commands
 
@@ -55,18 +60,21 @@ sift --version              # Show version
 
 ### `sift run` options
 
-| Option | Description |
-|--------|-------------|
-| `-c, --config <path>` | Path to `sift.config.json` |
-| `-p, --package <path>` | Path to `package.json` |
-| `--buffer <number>` | Max log lines in memory (default: 10000) |
-| `--follow <services>` | Comma-separated list of services to follow |
-| `--exclude <services>` | Comma-separated list of services to exclude |
-| `--no-detect` | Do not auto-detect services |
-| `--file <path>` | Read from log file or stdin (`-`) |
-| `--strip-ansi` | Strip ANSI color codes from output |
-| `--session-name <name>` | Name for the saved session |
-| `--no-save` | Do not persist this session to SQLite |
+| Option                  | Description                                                                     |
+| ----------------------- | ------------------------------------------------------------------------------- |
+| `-c, --config <path>`   | Path to `sift.config.json`                                                      |
+| `-p, --package <path>`  | Path to `package.json`                                                          |
+| `--buffer <number>`     | Max log lines in memory (default: 10000)                                        |
+| `--follow <services>`   | Comma-separated list of services to follow                                      |
+| `--exclude <services>`  | Comma-separated list of services to exclude                                     |
+| `--no-detect`           | Do not auto-detect services                                                     |
+| `--file <path>`         | Read from log file or stdin (`-`)                                               |
+| `--strip-ansi`          | Strip ANSI color codes from output                                              |
+| `--session-name <name>` | Name for the saved session                                                      |
+| `--no-save`             | Do not persist this session to SQLite                                           |
+| `--all`                 | Run every detected service, skip the picker                                     |
+| `-y, --yes`             | Skip prompts: reuse last selection, or run all confident (non-guessed) services |
+| `--select`              | Force the picker even if a previous selection was saved                         |
 
 ## Log persistence
 
@@ -111,21 +119,21 @@ Session identifiers can be a name, id, or alias (`last`, `today`, `yesterday`).
 
 ## Keyboard Shortcuts
 
-| Key | Action |
-|-----|--------|
-| `↑` / `↓` | Scroll logs |
-| `PgUp` / `PgDn` | Scroll 10 lines |
-| `Space` | Pause / resume |
-| `/` | Search |
-| `n` / `N` | Next / previous search match |
-| `e` | Filter errors |
-| `w` | Filter warnings |
-| `i` | Filter info |
-| `a` | Show all levels |
-| `s1` … `s9` | Toggle service visibility |
-| `d` | Detail view |
-| `h` / `?` | Help overlay |
-| `q` / `Ctrl+C` | Quit |
+| Key             | Action                       |
+| --------------- | ---------------------------- |
+| `↑` / `↓`       | Scroll logs                  |
+| `PgUp` / `PgDn` | Scroll 10 lines              |
+| `Space`         | Pause / resume               |
+| `/`             | Search                       |
+| `n` / `N`       | Next / previous search match |
+| `e`             | Filter errors                |
+| `w`             | Filter warnings              |
+| `i`             | Filter info                  |
+| `a`             | Show all levels              |
+| `s1` … `s9`     | Toggle service visibility    |
+| `d`             | Detail view                  |
+| `h` / `?`       | Help overlay                 |
+| `q` / `Ctrl+C`  | Quit                         |
 
 ## Supported Log Formats
 

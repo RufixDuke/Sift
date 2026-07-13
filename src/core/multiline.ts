@@ -17,7 +17,10 @@ export interface EntryEvent {
 }
 
 export class MultiLineAssembler extends EventEmitter {
-  private pending = new Map<string, { lines: string[]; stream: 'stdout' | 'stderr'; serviceColor: string; startSequence: number }>();
+  private pending = new Map<
+    string,
+    { lines: string[]; stream: 'stdout' | 'stderr'; serviceColor: string; startSequence: number }
+  >();
 
   feed(event: LineEvent): void {
     const key = event.service;

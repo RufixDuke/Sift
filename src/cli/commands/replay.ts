@@ -48,7 +48,10 @@ export async function replayCommand(options: ReplayOptions): Promise<void> {
     tracker.observe(entry);
 
     if (!servicesMap.has(entry.service)) {
-      servicesMap.set(entry.service, createServiceState({ name: entry.service, command: '' }, servicesMap.size));
+      servicesMap.set(
+        entry.service,
+        createServiceState({ name: entry.service, command: '' }, servicesMap.size),
+      );
     }
     const state = servicesMap.get(entry.service)!;
     state.logCount += 1;

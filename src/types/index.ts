@@ -12,13 +12,7 @@ export type ServiceType =
   | 'worker'
   | 'generic';
 
-export type ServiceStatus =
-  | 'starting'
-  | 'running'
-  | 'idle'
-  | 'stopped'
-  | 'crashed'
-  | 'unstable';
+export type ServiceStatus = 'starting' | 'running' | 'idle' | 'stopped' | 'crashed' | 'unstable';
 
 export interface DisplayEntry {
   timestamp: string;
@@ -59,6 +53,8 @@ export interface ServiceConfig {
   suppress?: boolean;
   prefix?: string;
   type?: ServiceType;
+  /** True when sift is not confident in the exact command (e.g. Celery/Sidekiq args) — surfaced unchecked in the run selector. */
+  guessed?: boolean;
 }
 
 export interface SiftSettings {
@@ -151,15 +147,9 @@ export const LOG_LEVEL_PATTERNS: Record<LogLevel, RegExp[]> = {
     /✗/,
     /\[error\]/i,
     /level[:=]50/i,
-    /HTTP\/\d\.\d\"\s+5\d{2}/,
+    /HTTP\/\d\.\d"\s+5\d{2}/,
   ],
-  warn: [
-    /\bWARN(ING)?\b/i,
-    /⚠/,
-    /\[warn\]/i,
-    /level[:=]40/i,
-    /HTTP\/\d\.\d\"\s+4\d{2}/,
-  ],
+  warn: [/\bWARN(ING)?\b/i, /⚠/, /\[warn\]/i, /level[:=]40/i, /HTTP\/\d\.\d"\s+4\d{2}/],
   info: [
     /\bINFO\b/i,
     /\bLOG\b/i,
@@ -167,15 +157,9 @@ export const LOG_LEVEL_PATTERNS: Record<LogLevel, RegExp[]> = {
     /✓/,
     /\[info\]/i,
     /level[:=]30/i,
-    /HTTP\/\d\.\d\"\s+[23]\d{2}/,
+    /HTTP\/\d\.\d"\s+[23]\d{2}/,
   ],
-  debug: [
-    /\bDEBUG\b/i,
-    /\bDBG\b/i,
-    /\[debug\]/i,
-    /level[:=]20/i,
-    /\bverbose\b/i,
-  ],
+  debug: [/\bDEBUG\b/i, /\bDBG\b/i, /\[debug\]/i, /level[:=]20/i, /\bverbose\b/i],
   trace: [/\bTRACE\b/i, /\[trace\]/i, /level[:=]10/i],
   unknown: [],
 };

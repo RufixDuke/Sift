@@ -126,7 +126,9 @@ export function parseGeneric(stripped: string): ParserResult {
 
   // Strip known level prefixes from message
   let message = rest;
-  const levelPrefixMatch = message.match(/^(?:\[)?(ERROR|WARN|WARNING|INFO|DEBUG|TRACE)(?:\])?[:\s]+/i);
+  const levelPrefixMatch = message.match(
+    /^(?:\[)?(ERROR|WARN|WARNING|INFO|DEBUG|TRACE)(?:\])?[:\s]+/i,
+  );
   if (levelPrefixMatch) {
     message = message.slice(levelPrefixMatch[0].length).trim();
   }
@@ -139,7 +141,11 @@ export function applyFilters(entry: ParsedLogEntry, filters: Filters): boolean {
     return false;
   }
 
-  if (filters.services && filters.services.length > 0 && !filters.services.includes(entry.service)) {
+  if (
+    filters.services &&
+    filters.services.length > 0 &&
+    !filters.services.includes(entry.service)
+  ) {
     return false;
   }
 

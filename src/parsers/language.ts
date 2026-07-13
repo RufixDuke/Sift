@@ -103,9 +103,7 @@ function parseGo(stripped: string): ParserResult | null {
   }
 
   // Logrus key=value: time="2026-01-15T09:32:15Z" level=info msg="Server started"
-  const logrus = stripped.match(
-    /time="([^"]+)"\s+level=(\S+)\s+msg="([^"]+)"/i,
-  );
+  const logrus = stripped.match(/time="([^"]+)"\s+level=(\S+)\s+msg="([^"]+)"/i);
   if (logrus) {
     return {
       timestamp: parseTimestamp(logrus[1]),
@@ -160,11 +158,14 @@ function parseRust(stripped: string): ParserResult | null {
   }
 
   // slog key=value: msg="Server started" level=INFO ts="2026-01-15T09:32:15Z"
-  const slog = stripped.match(/(?:^|\s)(?:msg|message)="([^"]+)".*(?:^|\s)level=(\S+)/i) ??
+  const slog =
+    stripped.match(/(?:^|\s)(?:msg|message)="([^"]+)".*(?:^|\s)level=(\S+)/i) ??
     stripped.match(/(?:^|\s)level=(\S+).*?(?:^|\s)(?:msg|message)="([^"]+)"/i);
   if (slog) {
-    const level = slog[2] && /^(ERROR|WARN|WARNING|INFO|DEBUG|TRACE)$/i.test(slog[2]) ? slog[2] : slog[1];
-    const message = slog[2] && /^(ERROR|WARN|WARNING|INFO|DEBUG|TRACE)$/i.test(slog[2]) ? slog[1] : slog[2];
+    const level =
+      slog[2] && /^(ERROR|WARN|WARNING|INFO|DEBUG|TRACE)$/i.test(slog[2]) ? slog[2] : slog[1];
+    const message =
+      slog[2] && /^(ERROR|WARN|WARNING|INFO|DEBUG|TRACE)$/i.test(slog[2]) ? slog[1] : slog[2];
     return {
       level: normalizeLevel(level),
       message: message?.trim() ?? stripped.trim(),
