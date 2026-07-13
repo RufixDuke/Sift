@@ -3,7 +3,6 @@ import { applyFilters } from './parser.js';
 
 export interface LogBufferOptions {
   capacity?: number;
-  reorderWindowMs?: number;
 }
 
 export class LogBuffer {
@@ -11,54 +10,16 @@ export class LogBuffer {
   private head = 0;
   private size = 0;
   private capacity: number;
-  private reorderWindowMs: number;
-  private pendingReorder: ParsedLogEntry[] = [];
   private sequence = 0;
 
   constructor(options: LogBufferOptions = {}) {
     this.capacity = options.capacity ?? 10000;
-    this.reorderWindowMs = options.reorderWindowMs ?? 500;
     this.entries = new Array(this.capacity);
   }
 
   append(entry: ParsedLogEntry): void {
     entry.id = ++this.sequence;
-
-    if (this.pendingReorder.length > 0) {
-      this.flushReorderWindow();
-    }
-
-    if (entry.timestamp) {
-      this.pendingReorder.push(entry);
-      setTimeout(() => this.flushReorderWindow(), this.reorderWindowMs);
-    } else {
-      this.pushEntry(entry);
-    }
-  }
-
-  private flushReorderWindow(): void {
-    if (this.pendingReorder.length === 0) return;
-
-    const now = Date.now();
-    const ready = this.pendingReorder.filter(
-      (e) => !e.timestamp || now - e.timestamp.getTime() >= this.reorderWindowMs,
-    );
-
-    if (ready.length === 0) return;
-
-    // Sort ready entries by timestamp, then sequence
-    ready.sort((a, b) => {
-      if (a.timestamp && b.timestamp) {
-        return a.timestamp.getTime() - b.timestamp.getTime();
-      }
-      return a.id - b.id;
-    });
-
-    for (const entry of ready) {
-      this.pushEntry(entry);
-      const idx = this.pendingReorder.indexOf(entry);
-      if (idx >= 0) this.pendingReorder.splice(idx, 1);
-    }
+    this.pushEntry(entry);
   }
 
   private pushEntry(entry: ParsedLogEntry): void {

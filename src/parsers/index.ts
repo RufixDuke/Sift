@@ -22,8 +22,8 @@ export type ParserName =
 const PARSERS: { name: ParserName; fn: (line: string, stripped: string, ctx: ParserContext) => ParserResult | null }[] = [
   { name: 'json-line', fn: parseJsonLine },
   { name: 'bracketed', fn: parseBracketed },
-  { name: 'prefixed', fn: parsePrefixed },
   { name: 'language', fn: parseLanguage },
+  { name: 'prefixed', fn: parsePrefixed },
   { name: 'access-log', fn: parseAccessLog },
   { name: 'docker', fn: parseDocker },
   { name: 'logfmt', fn: parseLogfmt },
