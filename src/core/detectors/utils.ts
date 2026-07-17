@@ -9,6 +9,13 @@ export function safeRead(path: string): string {
   }
 }
 
+/** Command prefix needed to run Python tools inside the project's env manager, if any. */
+export function pythonRunner(dir: string): string {
+  if (existsSync(join(dir, 'poetry.lock'))) return 'poetry run ';
+  if (existsSync(join(dir, 'Pipfile'))) return 'pipenv run ';
+  return '';
+}
+
 /**
  * Walks up from `dir` (excluding `dir` itself) looking for any of `names`.
  * Used to avoid re-detecting a manifest-less fallback service inside a

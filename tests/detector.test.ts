@@ -92,13 +92,80 @@ describe('detectServices', () => {
       writeFileSync(join(tempDir, 'requirements.txt'), 'django\ncelery\n');
 
       const services = detectServices({ packagePath: join(tempDir, 'package.json') });
-      expect(services).toHaveLength(2);
+      expect(services).toHaveLength(3);
+      const web = services.find((s) => s.name === 'web');
       const server = services.find((s) => s.name === 'server');
       const worker = services.find((s) => s.name === 'worker');
       expect(server?.command).toBe('python manage.py runserver');
       expect(server?.guessed).toBeFalsy();
       expect(worker?.command).toBe('celery -A app worker -l info');
       expect(worker?.guessed).toBe(true);
+      expect(web?.command).toBe('celery -A app worker -l info & python manage.py runserver');
+      expect(web?.guessed).toBe(true);
+    });
+
+    it('resolves the real Celery module from a celery.py file', () => {
+      writeFileSync(join(tempDir, 'manage.py'), '#!/usr/bin/env python');
+      writeFileSync(join(tempDir, 'requirements.txt'), 'django\ncelery\n');
+      mkdirSync(join(tempDir, 'stockkeeper'));
+      writeFileSync(
+        join(tempDir, 'stockkeeper', 'celery.py'),
+        "from celery import Celery\napp = Celery('stockkeeper')\n",
+      );
+
+      const services = detectServices({ packagePath: join(tempDir, 'package.json') });
+      expect(services).toHaveLength(3);
+      const worker = services.find((s) => s.name === 'worker');
+      expect(worker?.command).toBe('celery -A stockkeeper worker -l info');
+      expect(worker?.guessed).toBeFalsy();
+      const web = services.find((s) => s.name === 'web');
+      expect(web?.command).toBe(
+        'celery -A stockkeeper worker -l info & python manage.py runserver',
+      );
+      expect(web?.guessed).toBeFalsy();
+    });
+
+    it('detects a Celery worker for a FastAPI app that instantiates Celery', () => {
+      writeFileSync(join(tempDir, 'requirements.txt'), 'fastapi\nuvicorn\ncelery\n');
+      mkdirSync(join(tempDir, 'src'));
+      writeFileSync(
+        join(tempDir, 'src', 'main.py'),
+        'from fastapi import FastAPI\napp = FastAPI()\n',
+      );
+      writeFileSync(
+        join(tempDir, 'src', 'tasks.py'),
+        "from celery import Celery\ncelery_app = Celery('hecord', broker='redis://localhost')\n",
+      );
+
+      const services = detectServices({ packagePath: join(tempDir, 'package.json') });
+      expect(services).toHaveLength(3);
+      const server = services.find((s) => s.name === 'server');
+      const worker = services.find((s) => s.name === 'worker');
+      const web = services.find((s) => s.name === 'web');
+      expect(server?.command).toBe('uvicorn src.main:app --reload');
+      expect(worker?.command).toBe('celery -A src.tasks worker -l info');
+      expect(worker?.guessed).toBeFalsy();
+      expect(web?.command).toBe(
+        'celery -A src.tasks worker -l info & uvicorn src.main:app --reload',
+      );
+    });
+
+    it('detects a Celery worker from a nested celery.py for a FastAPI app', () => {
+      writeFileSync(join(tempDir, 'Pipfile'), '[[source]]\n');
+      mkdirSync(join(tempDir, 'src'));
+      writeFileSync(
+        join(tempDir, 'src', 'main.py'),
+        'from fastapi import FastAPI\napp = FastAPI()\n',
+      );
+      writeFileSync(
+        join(tempDir, 'src', 'celery.py'),
+        "from celery import Celery\napp = Celery('hecord')\n",
+      );
+
+      const services = detectServices({ packagePath: join(tempDir, 'package.json') });
+      const worker = services.find((s) => s.name === 'worker');
+      expect(worker?.command).toBe('pipenv run celery -A src worker -l info');
+      expect(worker?.guessed).toBeFalsy();
     });
 
     it('detects a FastAPI app and builds an uvicorn command', () => {
@@ -305,10 +372,44 @@ describe('detectServices', () => {
       expect(names).toEqual(['web', 'worker']);
       const web = services.find((s) => s.name === 'web');
       const worker = services.find((s) => s.name === 'worker');
+      expect(web?.command).toBe('gunicorn app:app');
       expect(web?.type).toBe('server');
       expect(web?.guessed).toBeFalsy();
       expect(worker?.type).toBe('worker');
       expect(worker?.guessed).toBe(true);
+    });
+
+    it('strips migrations and swaps gunicorn for runserver in a Django Procfile', () => {
+      writeFileSync(join(tempDir, 'manage.py'), '#!/usr/bin/env python');
+      writeFileSync(join(tempDir, 'requirements.txt'), 'django\ncelery\n');
+      mkdirSync(join(tempDir, 'stockkeeper'));
+      writeFileSync(
+        join(tempDir, 'stockkeeper', 'celery.py'),
+        "from celery import Celery\napp = Celery('stockkeeper')\n",
+      );
+      writeFileSync(
+        join(tempDir, 'Procfile'),
+        'web: celery -A StockKeeper worker --loglevel=info -B & python manage.py migrate && gunicorn StockKeeper.wsgi\n',
+      );
+
+      const services = detectServices({ packagePath: join(tempDir, 'package.json') });
+      expect(services).toHaveLength(3);
+      const web = services.find((s) => s.name === 'web');
+      expect(web?.command).toBe(
+        'celery -A StockKeeper worker --loglevel=info -B & python manage.py runserver',
+      );
+      expect(web?.command).not.toContain('migrate');
+      expect(web?.command).not.toContain('gunicorn');
+      const worker = services.find((s) => s.name === 'worker');
+      expect(worker?.command).toBe('celery -A stockkeeper worker -l info');
+    });
+
+    it('strips non-Django database commands without touching other segments', () => {
+      writeFileSync(join(tempDir, 'Procfile'), 'web: alembic upgrade head && gunicorn app:app\n');
+
+      const services = detectServices({ packagePath: join(tempDir, 'package.json') });
+      expect(services).toHaveLength(1);
+      expect(services[0].command).toBe('gunicorn app:app');
     });
   });
 

@@ -1,6 +1,8 @@
 import { existsSync } from 'node:fs';
 import { join } from 'node:path';
-import { safeRead, hasAncestorFile } from './utils.js';
+import { safeRead, hasAncestorFile, pythonRunner } from './utils.js';
+import { detectCeleryApp } from './celery.js';
+import { procfileDefinesWeb } from './procfile.js';
 import type { RawService } from './types.js';
 
 const MARKERS = ['pyproject.toml', 'requirements.txt', 'Pipfile', 'setup.py', 'manage.py'];
@@ -14,14 +16,40 @@ const ENTRY_CANDIDATES = [
   'application.py',
 ];
 
-function pythonRunner(dir: string): string {
-  if (existsSync(join(dir, 'poetry.lock'))) return 'poetry run ';
-  if (existsSync(join(dir, 'Pipfile'))) return 'pipenv run ';
-  return '';
-}
-
 function toModule(candidate: string): string {
   return candidate.replace(/\.py$/, '').replace(/\//g, '.');
+}
+
+function workerService(dir: string, runner: string): RawService | undefined {
+  const celery = detectCeleryApp(dir);
+  if (!celery) return undefined;
+  return {
+    name: 'worker',
+    command: `${runner}celery -A ${celery.module} worker -l info`,
+    type: 'worker',
+    guessed: celery.guessed || undefined,
+  };
+}
+
+/**
+ * When a project needs both a server and a worker, the `web` service bundles
+ * both into one command (worker backgrounded) so it can run everything at
+ * once. Skipped when a Procfile already defines `web` for the directory.
+ */
+function withCombinedWeb(dir: string, services: RawService[]): RawService[] {
+  const server = services.find((s) => s.type === 'server');
+  const worker = services.find((s) => s.type === 'worker');
+  if (!server || !worker || procfileDefinesWeb(dir)) return services;
+
+  return [
+    {
+      name: 'web',
+      command: `${worker.command} & ${server.command}`,
+      type: 'server',
+      guessed: server.guessed || worker.guessed || undefined,
+    },
+    ...services,
+  ];
 }
 
 export function detectPythonServices(dir: string): RawService[] {
@@ -39,24 +67,12 @@ export function detectPythonServices(dir: string): RawService[] {
     const services: RawService[] = [
       { name: 'server', command: `${runner}python manage.py runserver`, type: 'server' },
     ];
-    const depsText = [
-      safeRead(join(dir, 'pyproject.toml')),
-      safeRead(join(dir, 'requirements.txt')),
-      safeRead(join(dir, 'Pipfile')),
-    ]
-      .join('\n')
-      .toLowerCase();
-    if (depsText.includes('celery')) {
-      services.push({
-        name: 'worker',
-        command: `${runner}celery -A app worker -l info`,
-        type: 'worker',
-        guessed: true,
-      });
-    }
-    return services;
+    const worker = workerService(dir, runner);
+    if (worker) services.push(worker);
+    return withCombinedWeb(dir, services);
   }
 
+  let server: RawService | undefined;
   for (const candidate of ENTRY_CANDIDATES) {
     const full = join(dir, candidate);
     if (!existsSync(full)) continue;
@@ -65,21 +81,23 @@ export function detectPythonServices(dir: string): RawService[] {
     const fastapiMatch = content.match(/(\w+)\s*=\s*FastAPI\(/);
     if (fastapiMatch) {
       const module = toModule(candidate);
-      return [
-        {
-          name: 'server',
-          command: `${runner}uvicorn ${module}:${fastapiMatch[1]} --reload`,
-          type: 'server',
-        },
-      ];
+      server = {
+        name: 'server',
+        command: `${runner}uvicorn ${module}:${fastapiMatch[1]} --reload`,
+        type: 'server',
+      };
+      break;
     }
 
     const flaskMatch = content.match(/(\w+)\s*=\s*Flask\(/);
     if (flaskMatch) {
       const module = toModule(candidate);
-      return [
-        { name: 'server', command: `${runner}flask --app ${module} run --debug`, type: 'server' },
-      ];
+      server = {
+        name: 'server',
+        command: `${runner}flask --app ${module} run --debug`,
+        type: 'server',
+      };
+      break;
     }
 
     if (/import\s+streamlit/.test(content)) {
@@ -87,9 +105,13 @@ export function detectPythonServices(dir: string): RawService[] {
     }
   }
 
-  if (existsSync(join(dir, 'main.py'))) {
-    return [{ name: 'server', command: `${runner}python main.py`, type: 'server' }];
+  if (!server && existsSync(join(dir, 'main.py'))) {
+    server = { name: 'server', command: `${runner}python main.py`, type: 'server' };
   }
+  if (!server) return [];
 
-  return [];
+  const services = [server];
+  const worker = workerService(dir, runner);
+  if (worker) services.push(worker);
+  return withCombinedWeb(dir, services);
 }
